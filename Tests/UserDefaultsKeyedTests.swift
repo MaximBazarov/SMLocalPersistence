@@ -1,0 +1,55 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the SMLocalPersistence package open source project
+//
+// Copyright (c) 2025-2035 Maxim Bazarov and the SMLocalPersistence package
+// open source project authors
+// Licensed under MIT
+//
+// See LICENSE for license information
+//
+// SPDX-License-Identifier: MIT
+//
+//===----------------------------------------------------------------------===//
+
+import Foundation
+import Testing
+import StateManagement
+import SMLocalPersistence
+
+final class FlagPrefs: StateContainer {
+    @AsyncState(.userDefaults) var flags: [String: Bool] = [:]
+}
+
+struct SetFlag: SyncOperation {
+    let key: String
+    let value: Bool
+    func perform(in env: SyncOperationEnvironment) {
+        env.write(value, keyPath: \FlagPrefs.flags, key: key)
+    }
+}
+
+@Suite(.serialized)
+@MainActor
+struct UserDefaultsKeyedTests {
+
+    @Test("A keyed Sync write persists; a second Environment loads that key")
+    func keyedPersistOutLoadsInSecondEnvironment() async throws {
+        let (env, defaults, suiteName) = try isolatedSuite()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        env.preheat(\FlagPrefs.flags, key: "a")
+        env.perform(SetFlag(key: "a", value: true))
+
+        let key = "smud.\(String(describing: \FlagPrefs.flags))#a"
+        try await waitForUserDefaultsData(defaults, key: key)
+
+        let env2 = SharedEnvironment()
+        env2.perform(UseUserDefaults(defaults))
+        #expect(env2.read(\FlagPrefs.flags, key: "a") == true)
+        guard case .settled = env2.read(\FlagPrefs.$flags.status, key: "a") else {
+            Issue.record("expected settled")
+            return
+        }
+    }
+}
