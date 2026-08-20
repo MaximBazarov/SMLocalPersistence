@@ -15,7 +15,7 @@
 import Foundation
 import Testing
 import StateManagement
-import SMLocalPersistence
+@testable import SMLocalPersistence
 
 final class ThemePrefs: StateContainer {
     @AsyncState(.userDefaults) var theme: String = "system"
@@ -31,11 +31,11 @@ struct UserDefaultsLoadTests {
 
     @Test("Missing UserDefaults key settles the Container default")
     func missingKeySettlesDefault() throws {
-        let (env, defaults, suiteName) = try isolatedSuite()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let iso = IsolatedPersistence()
+        defer { iso.clear() }
 
-        #expect(env.read(\ThemePrefs.theme) == "system")
-        guard case .settled = env.read(\ThemePrefs.$theme.status) else {
+        #expect(iso.environment.read(\ThemePrefs.theme) == "system")
+        guard case .settled = iso.environment.read(\ThemePrefs.$theme.status) else {
             Issue.record("expected settled")
             return
         }
@@ -43,11 +43,11 @@ struct UserDefaultsLoadTests {
 
     @Test("Missing optional key settles nil")
     func missingOptionalSettlesNil() throws {
-        let (env, defaults, suiteName) = try isolatedSuite()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let iso = IsolatedPersistence()
+        defer { iso.clear() }
 
-        #expect(env.read(\OptionalPrefs.nickname) == nil)
-        guard case .settled = env.read(\OptionalPrefs.$nickname.status) else {
+        #expect(iso.environment.read(\OptionalPrefs.nickname) == nil)
+        guard case .settled = iso.environment.read(\OptionalPrefs.$nickname.status) else {
             Issue.record("expected settled")
             return
         }
@@ -55,14 +55,14 @@ struct UserDefaultsLoadTests {
 
     @Test("Corrupt UserDefaults data fails Source status and leaves the seed")
     func corruptDataFailsStatus() throws {
-        let (env, defaults, suiteName) = try isolatedSuite()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let iso = IsolatedPersistence()
+        defer { iso.clear() }
 
         let key = "smud.\(String(describing: \ThemePrefs.theme))"
-        defaults.set(Data([0x00, 0x01, 0x02]), forKey: key)
+        iso.defaults.set(Data([0x00, 0x01, 0x02]), forKey: key)
 
-        #expect(env.read(\ThemePrefs.theme) == "system")
-        guard case .error = env.read(\ThemePrefs.$theme.status) else {
+        #expect(iso.environment.read(\ThemePrefs.theme) == "system")
+        guard case .error = iso.environment.read(\ThemePrefs.$theme.status) else {
             Issue.record("expected error")
             return
         }
@@ -70,17 +70,16 @@ struct UserDefaultsLoadTests {
 
     @Test("A Sync write persists; a second Environment loads the Value")
     func persistOutLoadsInSecondEnvironment() async throws {
-        let (env, defaults, suiteName) = try isolatedSuite()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let iso = IsolatedPersistence()
+        defer { iso.clear() }
 
-        #expect(env.read(\ThemePrefs.theme) == "system")
-        env.perform(SetTheme(value: "dark"))
+        #expect(iso.environment.read(\ThemePrefs.theme) == "system")
+        iso.environment.perform(SetTheme(value: "dark"))
 
         let key = "smud.\(String(describing: \ThemePrefs.theme))"
-        try await waitForUserDefaultsData(defaults, key: key)
+        try await waitForPersistOut(iso, key: key)
 
-        let env2 = SharedEnvironment()
-        env2.perform(UseUserDefaults(defaults))
+        let env2 = iso.additionalEnvironment()
         #expect(env2.read(\ThemePrefs.theme) == "dark")
         guard case .settled = env2.read(\ThemePrefs.$theme.status) else {
             Issue.record("expected settled")

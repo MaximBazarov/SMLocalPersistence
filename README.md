@@ -12,7 +12,7 @@ final class Prefs: StateContainer {
 
 Values are `Codable`. The UserDefaults key is the Address (`smud.{path}` / `smud.{path}#{key}`). Load on first read or `preheat`. A Sync write to a bound Address persists once at notify.
 
-Tests and previews perform `UseUserDefaults` with a named suite before first load, and `ClearUserDefaultsSuite` on teardown. Do not clear `.standard`.
+Tests and previews construct `IsolatedPersistence` and `defer { iso.clear() }`. Production Containers stay `@AsyncState(.userDefaults)`. `SharedEnvironment()` stays production.
 
 ## Requirements
 

@@ -16,9 +16,43 @@ import Foundation
 import StateManagement
 
 /// Policy for ``UserDefaultsSource``. Call site `@AsyncState(.userDefaults)`.
-public enum UserDefaultsPolicy: Sendable {
-    /// Selects ``UserDefaultsSource``.
-    case userDefaults
+///
+/// Shipped ``userDefaults`` is `.standard`. A named suite is ``init(suiteName:)``. Empty name is
+/// `preconditionFailure`. IsolatedPersistence overlays Persistence identity at `provide`.
+public struct UserDefaultsPolicy: Sendable, Equatable {
+    enum Identity: Sendable, Equatable {
+        case standard
+        case suite(String)
+    }
+
+    let identity: Identity
+
+    private init(identity: Identity) {
+        self.identity = identity
+    }
+
+    /// Selects ``UserDefaultsSource``. Persistence identity is `UserDefaults.standard`.
+    public static let userDefaults = UserDefaultsPolicy(identity: .standard)
+
+    /// Named UserDefaults suite. Empty name is `preconditionFailure`.
+    public init(suiteName: String) {
+        guard !suiteName.isEmpty else {
+            preconditionFailure("UserDefaultsPolicy suiteName must not be empty")
+        }
+        identity = .suite(suiteName)
+    }
+
+    func makeUserDefaults() -> UserDefaults {
+        switch identity {
+        case .standard:
+            return .standard
+        case .suite(let name):
+            guard let defaults = UserDefaults(suiteName: name) else {
+                preconditionFailure("UserDefaultsPolicy suiteName \(name) failed")
+            }
+            return defaults
+        }
+    }
 }
 
 extension AsyncState where S == UserDefaultsSource {

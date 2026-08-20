@@ -15,7 +15,7 @@
 import Foundation
 import Testing
 import StateManagement
-import SMLocalPersistence
+@testable import SMLocalPersistence
 
 final class FlagPrefs: StateContainer {
     @AsyncState(.userDefaults) var flags: [String: Bool] = [:]
@@ -35,17 +35,16 @@ struct UserDefaultsKeyedTests {
 
     @Test("A keyed Sync write persists; a second Environment loads that key")
     func keyedPersistOutLoadsInSecondEnvironment() async throws {
-        let (env, defaults, suiteName) = try isolatedSuite()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let iso = IsolatedPersistence()
+        defer { iso.clear() }
 
-        env.preheat(\FlagPrefs.flags, key: "a")
-        env.perform(SetFlag(key: "a", value: true))
+        iso.environment.preheat(\FlagPrefs.flags, key: "a")
+        iso.environment.perform(SetFlag(key: "a", value: true))
 
         let key = "smud.\(String(describing: \FlagPrefs.flags))#a"
-        try await waitForUserDefaultsData(defaults, key: key)
+        try await waitForPersistOut(iso, key: key)
 
-        let env2 = SharedEnvironment()
-        env2.perform(UseUserDefaults(defaults))
+        let env2 = iso.additionalEnvironment()
         #expect(env2.read(\FlagPrefs.flags, key: "a") == true)
         guard case .settled = env2.read(\FlagPrefs.$flags.status, key: "a") else {
             Issue.record("expected settled")

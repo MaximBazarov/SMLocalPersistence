@@ -23,17 +23,20 @@ public final class UserDefaultsSource: Source {
 
     public let sourceUpdate = SourceUpdate.write
 
+    var persistItems: [PersistItem] = []
+
     public init() {}
 
     public func provide<Storage: StateContainer, Value>(
         _ keyPath: KeyPath<Storage, Value>,
-        policy _: Policy,
+        policy: Policy,
         in env: SourceEnvironment
     ) {
         guard let writable = keyPath as? WritableKeyPath<Storage, Value> else {
             return
         }
-        let defaults = env.read(\UserDefaultsConfiguration.defaults)
+        let defaults = PersistenceOverlay.userDefaults(policy: policy, environmentID: env.environmentID)
+        UserDefaultsPersistLedger.register(self, environmentID: env.environmentID)
         let key = userDefaultsKey(keyPath)
         let loaded: Bool
         if let data = defaults.data(forKey: key) {
@@ -49,10 +52,11 @@ public final class UserDefaultsSource: Source {
     public func provide<Storage: StateContainer, Key: Hashable, Value>(
         _ keyPath: KeyPath<Storage, [Key: Value]>,
         key: Key,
-        policy _: Policy,
+        policy: Policy,
         in env: SourceEnvironment
     ) {
-        let defaults = env.read(\UserDefaultsConfiguration.defaults)
+        let defaults = PersistenceOverlay.userDefaults(policy: policy, environmentID: env.environmentID)
+        UserDefaultsPersistLedger.register(self, environmentID: env.environmentID)
         let udKey = userDefaultsKey(keyPath, key: key)
         let loaded: Bool
         if let writable = keyPath as? WritableKeyPath<Storage, [Key: Value]> {
@@ -137,12 +141,11 @@ public final class UserDefaultsSource: Source {
                 _ = service.getValue(keyPath)
             },
             run: { service in
-                let store = service.getValue(\UserDefaultsConfiguration.defaults)
                 let value = service.getValue(keyPath)
-                try service.perform(PersistUserDefaults(defaults: store, key: key, value: value))
+                try service.perform(PersistUserDefaults(defaults: defaults, key: key, value: value))
             }
         )
-        UserDefaultsPersistLedger.append(item, defaults: defaults)
+        persistItems.append(item)
     }
 
     private func registerPersist<Storage: StateContainer, Key: Hashable, Value>(
@@ -159,13 +162,12 @@ public final class UserDefaultsSource: Source {
                 _ = service.getValue(keyPath: keyPath, key: entry)
             },
             run: { service in
-                let store = service.getValue(\UserDefaultsConfiguration.defaults)
                 guard let value = service.getValue(keyPath: keyPath, key: entry) else {
                     return
                 }
-                try service.perform(PersistUserDefaults(defaults: store, key: udKey, value: value))
+                try service.perform(PersistUserDefaults(defaults: defaults, key: udKey, value: value))
             }
         )
-        UserDefaultsPersistLedger.append(item, defaults: defaults)
+        persistItems.append(item)
     }
 }

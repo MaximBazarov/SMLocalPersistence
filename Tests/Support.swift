@@ -15,7 +15,7 @@
 import Foundation
 import Testing
 import StateManagement
-import SMLocalPersistence
+@testable import SMLocalPersistence
 
 struct SetTheme: SyncOperation {
     let value: String
@@ -24,14 +24,10 @@ struct SetTheme: SyncOperation {
     }
 }
 
-@MainActor
-func isolatedSuite() throws -> (env: SharedEnvironment, defaults: UserDefaults, suiteName: String) {
-    let suiteName = "smud.tests.\(UUID().uuidString)"
-    let defaults = try #require(UserDefaults(suiteName: suiteName))
-    defaults.removePersistentDomain(forName: suiteName)
-    let env = SharedEnvironment()
-    env.perform(UseUserDefaults(defaults))
-    return (env, defaults, suiteName)
+struct ResetAll: SyncOperation {
+    func perform(in env: SyncOperationEnvironment) {
+        env.reset()
+    }
 }
 
 @MainActor
@@ -44,4 +40,9 @@ func waitForUserDefaultsData(_ defaults: UserDefaults, key: String) async throws
         try await Task.sleep(for: .milliseconds(5))
     }
     Issue.record("timed out waiting for UserDefaults key \(key)")
+}
+
+@MainActor
+func waitForPersistOut(_ iso: IsolatedPersistence, key: String) async throws {
+    try await waitForUserDefaultsData(iso.defaults, key: key)
 }

@@ -15,28 +15,28 @@
 import Foundation
 import Testing
 import StateManagement
-import SMLocalPersistence
+@testable import SMLocalPersistence
 
 @Suite(.serialized)
 @MainActor
 struct UserDefaultsIsolationTests {
 
-    @Test("Different suites do not share Values")
-    func differentSuitesDoNotShare() async throws {
-        let (envA, defaultsA, suiteA) = try isolatedSuite()
-        defer { defaultsA.removePersistentDomain(forName: suiteA) }
-        let (envB, defaultsB, suiteB) = try isolatedSuite()
-        defer { defaultsB.removePersistentDomain(forName: suiteB) }
+    @Test("Different IsolatedPersistence instances do not share Values")
+    func differentIsolatesDoNotShare() async throws {
+        let isoA = IsolatedPersistence()
+        defer { isoA.clear() }
+        let isoB = IsolatedPersistence()
+        defer { isoB.clear() }
 
-        #expect(envA.read(\ThemePrefs.theme) == "system")
-        envA.perform(SetTheme(value: "dark"))
-        try await waitForUserDefaultsData(
-            defaultsA,
+        #expect(isoA.environment.read(\ThemePrefs.theme) == "system")
+        isoA.environment.perform(SetTheme(value: "dark"))
+        try await waitForPersistOut(
+            isoA,
             key: "smud.\(String(describing: \ThemePrefs.theme))"
         )
 
-        #expect(envB.read(\ThemePrefs.theme) == "system")
-        guard case .settled = envB.read(\ThemePrefs.$theme.status) else {
+        #expect(isoB.environment.read(\ThemePrefs.theme) == "system")
+        guard case .settled = isoB.environment.read(\ThemePrefs.$theme.status) else {
             Issue.record("expected settled")
             return
         }

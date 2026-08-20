@@ -36,24 +36,42 @@ final class PersistItem {
 }
 
 @MainActor
-enum UserDefaultsPersistLedger {
-    static var items: [ObjectIdentifier: [PersistItem]] = [:]
+final class WeakUserDefaultsSource {
+    weak var source: UserDefaultsSource?
 
-    static func append(_ item: PersistItem, defaults: UserDefaults) {
-        items[ObjectIdentifier(defaults), default: []].append(item)
+    init(_ source: UserDefaultsSource) {
+        self.source = source
+    }
+}
+
+@MainActor
+enum UserDefaultsPersistLedger {
+    static var sources: [ObjectIdentifier: WeakUserDefaultsSource] = [:]
+
+    static func register(_ source: UserDefaultsSource, environmentID: ObjectIdentifier) {
+        sources[environmentID] = WeakUserDefaultsSource(source)
     }
 
-    static func items(for defaults: UserDefaults) -> [PersistItem] {
-        items[ObjectIdentifier(defaults)] ?? []
+    static func source(for environmentID: ObjectIdentifier) -> UserDefaultsSource? {
+        sources[environmentID]?.source
     }
 }
 
 /// Persist-out Service. Reads sourced Addresses and `try perform`s ``PersistUserDefaults``.
 @MainActor
 final class UserDefaultsPersist: EnvironmentService {
+    private let environmentID: ObjectIdentifier
+
+    required init(env: SharedEnvironment) {
+        environmentID = ObjectIdentifier(env)
+        super.init(env: env)
+    }
+
     override func serve() async {
-        let defaults = getValue(\UserDefaultsConfiguration.defaults)
-        for item in UserDefaultsPersistLedger.items(for: defaults) {
+        guard let source = UserDefaultsPersistLedger.source(for: environmentID) else {
+            return
+        }
+        for item in source.persistItems {
             item.subscribe(self)
             let shouldPersist = item.persistOnNextServe || item.wasSourcedUpdated(self)
             item.persistOnNextServe = false

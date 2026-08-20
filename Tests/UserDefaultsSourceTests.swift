@@ -15,7 +15,7 @@
 import Foundation
 import Testing
 import StateManagement
-import SMLocalPersistence
+@testable import SMLocalPersistence
 
 @Suite(.serialized)
 @MainActor
@@ -23,13 +23,13 @@ struct UserDefaultsSourceTests {
 
     @Test("Preheat loads with no prior read")
     func preheatLoadsWithNoPriorRead() throws {
-        let (env, defaults, suiteName) = try isolatedSuite()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let iso = IsolatedPersistence()
+        defer { iso.clear() }
 
-        env.preheat(\ThemePrefs.theme)
+        iso.environment.preheat(\ThemePrefs.theme)
 
-        #expect(env.read(\ThemePrefs.theme) == "system")
-        guard case .settled = env.read(\ThemePrefs.$theme.status) else {
+        #expect(iso.environment.read(\ThemePrefs.theme) == "system")
+        guard case .settled = iso.environment.read(\ThemePrefs.$theme.status) else {
             Issue.record("expected settled")
             return
         }
@@ -37,12 +37,13 @@ struct UserDefaultsSourceTests {
 
     @Test("Seed before first read does not write the suite")
     func seedBeforeProvideDoesNotWriteSuite() throws {
-        let (env, defaults, suiteName) = try isolatedSuite()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let iso = IsolatedPersistence()
+        defer { iso.clear() }
 
-        env.perform(SetTheme(value: "dark"))
+        iso.environment.perform(SetTheme(value: "dark"))
 
         let key = "smud.\(String(describing: \ThemePrefs.theme))"
-        #expect(defaults.data(forKey: key) == nil)
+        #expect(iso.defaults.data(forKey: key) == nil)
+        #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "system")
     }
 }

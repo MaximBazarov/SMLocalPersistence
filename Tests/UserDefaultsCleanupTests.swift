@@ -15,27 +15,23 @@
 import Foundation
 import Testing
 import StateManagement
-import SMLocalPersistence
+@testable import SMLocalPersistence
 
 @Suite(.serialized)
 @MainActor
 struct UserDefaultsCleanupTests {
 
-    @Test("ClearUserDefaultsSuite empties that suite")
-    func clearEmptiesNamedSuite() async throws {
-        let (env, defaults, suiteName) = try isolatedSuite()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+    @Test("clear empties that suite so a later Environment loads the seed")
+    func clearEmptiesSuite() async throws {
+        let iso = IsolatedPersistence()
+        defer { iso.clear() }
 
-        #expect(env.read(\ThemePrefs.theme) == "system")
-        env.perform(SetTheme(value: "dark"))
+        #expect(iso.environment.read(\ThemePrefs.theme) == "system")
+        iso.environment.perform(SetTheme(value: "dark"))
         let key = "smud.\(String(describing: \ThemePrefs.theme))"
-        try await waitForUserDefaultsData(defaults, key: key)
+        try await waitForPersistOut(iso, key: key)
 
-        env.perform(ClearUserDefaultsSuite(suiteName: suiteName))
-        #expect(defaults.data(forKey: key) == nil)
-
-        let env2 = SharedEnvironment()
-        env2.perform(UseUserDefaults(defaults))
-        #expect(env2.read(\ThemePrefs.theme) == "system")
+        iso.clear()
+        #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "system")
     }
 }
