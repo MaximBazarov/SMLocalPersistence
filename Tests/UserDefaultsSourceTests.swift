@@ -19,10 +19,10 @@ import SMLocalPersistence
 
 @Suite(.serialized)
 @MainActor
-struct UserDefaultsBindTests {
+struct UserDefaultsSourceTests {
 
     @Test("Preheat loads with no prior read")
-    func preheatBinds() throws {
+    func preheatLoadsWithNoPriorRead() throws {
         let (env, defaults, suiteName) = try isolatedSuite()
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
@@ -36,7 +36,7 @@ struct UserDefaultsBindTests {
     }
 
     @Test("Seed before first read does not write the suite")
-    func seedBeforeBindDoesNotWriteSuite() throws {
+    func seedBeforeProvideDoesNotWriteSuite() throws {
         let (env, defaults, suiteName) = try isolatedSuite()
         defer { defaults.removePersistentDomain(forName: suiteName) }
 

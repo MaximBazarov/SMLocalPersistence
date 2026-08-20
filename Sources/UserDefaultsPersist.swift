@@ -36,7 +36,7 @@ final class PersistItem {
 }
 
 @MainActor
-enum UserDefaultsBindLedger {
+enum UserDefaultsPersistLedger {
     static var items: [ObjectIdentifier: [PersistItem]] = [:]
 
     static func append(_ item: PersistItem, defaults: UserDefaults) {
@@ -48,12 +48,12 @@ enum UserDefaultsBindLedger {
     }
 }
 
-/// Persist-out Service. Reads bound Addresses and `try perform`s ``PersistUserDefaults``.
+/// Persist-out Service. Reads sourced Addresses and `try perform`s ``PersistUserDefaults``.
 @MainActor
 final class UserDefaultsPersist: EnvironmentService {
     override func serve() async {
         let defaults = getValue(\UserDefaultsConfiguration.defaults)
-        for item in UserDefaultsBindLedger.items(for: defaults) {
+        for item in UserDefaultsPersistLedger.items(for: defaults) {
             item.subscribe(self)
             let shouldPersist = item.persistOnNextServe || item.wasSourcedUpdated(self)
             item.persistOnNextServe = false

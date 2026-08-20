@@ -142,7 +142,7 @@ public final class UserDefaultsSource: Source {
                 try service.perform(PersistUserDefaults(defaults: store, key: key, value: value))
             }
         )
-        UserDefaultsBindLedger.append(item, defaults: defaults)
+        UserDefaultsPersistLedger.append(item, defaults: defaults)
     }
 
     private func registerPersist<Storage: StateContainer, Key: Hashable, Value>(
@@ -166,6 +166,6 @@ public final class UserDefaultsSource: Source {
                 try service.perform(PersistUserDefaults(defaults: store, key: udKey, value: value))
             }
         )
-        UserDefaultsBindLedger.append(item, defaults: defaults)
+        UserDefaultsPersistLedger.append(item, defaults: defaults)
     }
 }

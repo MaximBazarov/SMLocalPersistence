@@ -22,14 +22,14 @@ public enum UserDefaultsPolicy: Sendable {
 }
 
 extension AsyncState where S == UserDefaultsSource {
-    /// Atomic sourced Value. Status starts `.pending`. Passes ``UserDefaultsPolicy`` to the Source.
+    /// Pins `S` to ``UserDefaultsSource``.
     @_disfavoredOverload
     public convenience init(wrappedValue: Value, _ policy: UserDefaultsPolicy)
         where Status == SourceStatus<UserDefaultsSource.Failure> {
         self.init(wrappedValue: wrappedValue, policy: policy)
     }
 
-    /// Keyed sourced Value. Per-key status starts missing and is seeded `.pending` on first read.
+    /// Pins `S` to ``UserDefaultsSource``.
     public convenience init<Key: Hashable, Output>(
         wrappedValue: [Key: Output],
         _ policy: UserDefaultsPolicy
