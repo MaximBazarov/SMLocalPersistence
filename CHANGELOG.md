@@ -8,6 +8,8 @@ All notable changes to SMLocalPersistence are recorded here. The format follows 
 
 - `IsolatedPersistence` overlays a unique UserDefaults suite for tests and previews. `additionalEnvironment()` shares that Persistence identity. `clear()` / deinit wipe the UUID disk. DEBUG `seed { }` forwards to `SharedEnvironment.seed`. DEBUG `.sharedEnvironment(iso)` / `.sharedEnvironment(.isolatedPersistence)` retain IsolatedPersistence for the View.
 
+- Keychain Source. App `KeychainPolicy` static (`accessibility`, `accessGroup`, `synchronizable`, `service`). `@AsyncState(KeychainSource.self)` does not compile. IsolatedPersistence overlays a UUID Keychain service and forces `synchronizable = false` and `accessGroup = nil`.
+
 - UserDefaults KVS Satellite on the StateManagement `Source` seam. Source with `@AsyncState(.userDefaults)`.
 
 ### Changed

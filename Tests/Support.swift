@@ -15,7 +15,6 @@
 import Foundation
 import Testing
 import StateManagement
-@testable import SMLocalPersistence
 
 struct SetTheme: SyncOperation {
     let value: String
@@ -40,9 +39,4 @@ func waitForUserDefaultsData(_ defaults: UserDefaults, key: String) async throws
         try await Task.sleep(for: .milliseconds(5))
     }
     Issue.record("timed out waiting for UserDefaults key \(key)")
-}
-
-@MainActor
-func waitForPersistOut(_ iso: IsolatedPersistence, key: String) async throws {
-    try await waitForUserDefaultsData(iso.defaults, key: key)
 }

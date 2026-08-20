@@ -30,7 +30,7 @@ struct IsolatedPersistenceTests {
 
         #expect(iso.environment.read(\ThemePrefs.theme) == "system")
         iso.environment.perform(SetTheme(value: "dark"))
-        try await waitForPersistOut(iso, key: key)
+        try await iso.waitForPersistOut(key: key)
 
         #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "dark")
         #expect(UserDefaults.standard.data(forKey: key) == before)
@@ -45,7 +45,7 @@ struct IsolatedPersistenceTests {
 
         iso.environment.preheat(\ThemePrefs.theme)
         iso.environment.perform(SetTheme(value: "dark"))
-        try await waitForPersistOut(iso, key: key)
+        try await iso.waitForPersistOut(key: key)
 
         let env2 = iso.additionalEnvironment()
         #expect(env2.read(\ThemePrefs.theme) == "dark")
@@ -63,7 +63,7 @@ struct IsolatedPersistenceTests {
 
         #expect(iso.environment.read(\ThemePrefs.theme) == "system")
         iso.environment.perform(SetTheme(value: "dark"))
-        try await waitForPersistOut(iso, key: key)
+        try await iso.waitForPersistOut(key: key)
 
         iso.clear()
         #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "system")
@@ -77,7 +77,7 @@ struct IsolatedPersistenceTests {
 
         iso.environment.preheat(\ThemePrefs.theme)
         iso.environment.perform(SetTheme(value: "dark"))
-        try await waitForPersistOut(iso, key: key)
+        try await iso.waitForPersistOut(key: key)
 
         let production = SharedEnvironment()
         #expect(production.read(\ThemePrefs.theme) == "system")
@@ -94,7 +94,7 @@ struct IsolatedPersistenceTests {
             Write(\ThemePrefs.theme, "dark")
         }
         iso.environment.preheat(\ThemePrefs.theme)
-        try await waitForPersistOut(iso, key: key)
+        try await iso.waitForPersistOut(key: key)
 
         #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "dark")
     }
@@ -108,7 +108,7 @@ struct IsolatedPersistenceTests {
 
         iso.environment.preheat(\ThemePrefs.theme)
         iso.environment.perform(SetTheme(value: "dark"))
-        try await waitForPersistOut(iso, key: key)
+        try await iso.waitForPersistOut(key: key)
 
         iso.environment.perform(ResetAll())
         #expect(iso.environment.read(\ThemePrefs.theme) == "dark")
@@ -126,7 +126,7 @@ struct IsolatedPersistenceTests {
 
         iso.environment.preheat(\NamedSuitePrefs.theme)
         iso.environment.perform(SetNamedSuiteTheme(value: "dark"))
-        try await waitForPersistOut(iso, key: key)
+        try await iso.waitForPersistOut(key: key)
 
         #expect(named.data(forKey: key) == nil)
         #expect(iso.additionalEnvironment().read(\NamedSuitePrefs.theme) == "dark")

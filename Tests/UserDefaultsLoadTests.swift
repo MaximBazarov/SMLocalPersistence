@@ -59,7 +59,7 @@ struct UserDefaultsLoadTests {
         defer { iso.clear() }
 
         let key = "smud.\(String(describing: \ThemePrefs.theme))"
-        iso.defaults.set(Data([0x00, 0x01, 0x02]), forKey: key)
+        iso.plant(Data([0x00, 0x01, 0x02]), forKey: key)
 
         #expect(iso.environment.read(\ThemePrefs.theme) == "system")
         guard case .error = iso.environment.read(\ThemePrefs.$theme.status) else {
@@ -77,7 +77,7 @@ struct UserDefaultsLoadTests {
         iso.environment.perform(SetTheme(value: "dark"))
 
         let key = "smud.\(String(describing: \ThemePrefs.theme))"
-        try await waitForPersistOut(iso, key: key)
+        try await iso.waitForPersistOut(key: key)
 
         let env2 = iso.additionalEnvironment()
         #expect(env2.read(\ThemePrefs.theme) == "dark")

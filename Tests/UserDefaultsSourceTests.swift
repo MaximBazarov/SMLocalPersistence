@@ -15,7 +15,7 @@
 import Foundation
 import Testing
 import StateManagement
-@testable import SMLocalPersistence
+import SMLocalPersistence
 
 @Suite(.serialized)
 @MainActor
@@ -42,8 +42,6 @@ struct UserDefaultsSourceTests {
 
         iso.environment.perform(SetTheme(value: "dark"))
 
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
-        #expect(iso.defaults.data(forKey: key) == nil)
         #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "system")
     }
 }
