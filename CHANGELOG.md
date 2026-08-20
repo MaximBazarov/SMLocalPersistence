@@ -6,8 +6,9 @@ All notable changes to SMLocalPersistence are recorded here. The format follows 
 
 ### Added
 
-- UserDefaults KVS Satellite on the StateManagement `Source` seam. Bind with `@AsyncState(.userDefaults)`.
+- UserDefaults KVS Satellite on the StateManagement `Source` seam. Source with `@AsyncState(.userDefaults)`.
 
 ### Changed
 
 - Package, product, and module are `SMLocalPersistence`.
+- `UserDefaultsBind` is `UserDefaultsPolicy`. `@AsyncState(UserDefaultsSource.self)` does not compile.

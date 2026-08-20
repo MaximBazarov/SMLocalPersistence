@@ -15,24 +15,25 @@
 import Foundation
 import StateManagement
 
-/// Bind token for `@AsyncState(.userDefaults)`. The Source is ``UserDefaultsSource``.
-public enum UserDefaultsBind: Sendable {
+/// Policy for ``UserDefaultsSource``. Call site `@AsyncState(.userDefaults)`.
+public enum UserDefaultsPolicy: Sendable {
+    /// Selects ``UserDefaultsSource``.
     case userDefaults
 }
 
 extension AsyncState where S == UserDefaultsSource {
-    /// Atomic sourced Value bound to UserDefaults. Status starts `.pending`.
+    /// Atomic sourced Value. Status starts `.pending`. Passes ``UserDefaultsPolicy`` to the Source.
     @_disfavoredOverload
-    public convenience init(wrappedValue: Value, _: UserDefaultsBind)
+    public convenience init(wrappedValue: Value, _ policy: UserDefaultsPolicy)
         where Status == SourceStatus<UserDefaultsSource.Failure> {
-        self.init(wrappedValue: wrappedValue, UserDefaultsSource.self)
+        self.init(wrappedValue: wrappedValue, policy: policy)
     }
 
-    /// Keyed sourced Value bound to UserDefaults. Per-key status starts missing and is seeded `.pending` on Bind.
+    /// Keyed sourced Value. Per-key status starts missing and is seeded `.pending` on first read.
     public convenience init<Key: Hashable, Output>(
         wrappedValue: [Key: Output],
-        _: UserDefaultsBind
+        _ policy: UserDefaultsPolicy
     ) where Value == [Key: Output], Status == [Key: SourceStatus<UserDefaultsSource.Failure>] {
-        self.init(wrappedValue: wrappedValue, UserDefaultsSource.self)
+        self.init(wrappedValue: wrappedValue, policy: policy)
     }
 }

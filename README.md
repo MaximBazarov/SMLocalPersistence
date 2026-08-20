@@ -2,7 +2,7 @@
 
 UserDefaults persistence for [StateManagement](https://github.com). A Satellite: it owns the store. Core owns the Source seam.
 
-## Bind
+## Source
 
 ```swift
 final class Prefs: StateContainer {

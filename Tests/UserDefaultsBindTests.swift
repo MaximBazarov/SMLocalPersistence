@@ -17,15 +17,11 @@ import Testing
 import StateManagement
 import SMLocalPersistence
 
-final class CoreBindPrefs: StateContainer {
-    @AsyncState(UserDefaultsSource.self) var theme: String = "system"
-}
-
 @Suite(.serialized)
 @MainActor
 struct UserDefaultsBindTests {
 
-    @Test("Preheat binds with no prior read")
+    @Test("Preheat loads with no prior read")
     func preheatBinds() throws {
         let (env, defaults, suiteName) = try isolatedSuite()
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -39,19 +35,7 @@ struct UserDefaultsBindTests {
         }
     }
 
-    @Test("Core UserDefaultsSource.self Bind still loads")
-    func coreTypeBindLoads() throws {
-        let (env, defaults, suiteName) = try isolatedSuite()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-
-        #expect(env.read(\CoreBindPrefs.theme) == "system")
-        guard case .settled = env.read(\CoreBindPrefs.$theme.status) else {
-            Issue.record("expected settled")
-            return
-        }
-    }
-
-    @Test("Seed before Bind does not write the suite")
+    @Test("Seed before first read does not write the suite")
     func seedBeforeBindDoesNotWriteSuite() throws {
         let (env, defaults, suiteName) = try isolatedSuite()
         defer { defaults.removePersistentDomain(forName: suiteName) }

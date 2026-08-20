@@ -19,6 +19,7 @@ import StateManagement
 @MainActor
 public final class UserDefaultsSource: Source {
     public typealias Failure = DecodingError
+    public typealias Policy = UserDefaultsPolicy
 
     public let sourceUpdate = SourceUpdate.write
 
@@ -26,6 +27,7 @@ public final class UserDefaultsSource: Source {
 
     public func provide<Storage: StateContainer, Value>(
         _ keyPath: KeyPath<Storage, Value>,
+        policy _: Policy,
         in env: SourceEnvironment
     ) {
         guard let writable = keyPath as? WritableKeyPath<Storage, Value> else {
@@ -47,6 +49,7 @@ public final class UserDefaultsSource: Source {
     public func provide<Storage: StateContainer, Key: Hashable, Value>(
         _ keyPath: KeyPath<Storage, [Key: Value]>,
         key: Key,
+        policy _: Policy,
         in env: SourceEnvironment
     ) {
         let defaults = env.read(\UserDefaultsConfiguration.defaults)
