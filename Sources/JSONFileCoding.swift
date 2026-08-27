@@ -14,6 +14,7 @@
 
 import Foundation
 
+@_documentation(visibility: private)
 func encodeJSONFileValue<T>(_ value: T) throws(EncodingError) -> Data {
     guard let encodable = value as? any Encodable else {
         preconditionFailure("SMLocalPersistence Value must be Codable")
@@ -21,6 +22,7 @@ func encodeJSONFileValue<T>(_ value: T) throws(EncodingError) -> Data {
     return try encodeJSON(encodable)
 }
 
+@_documentation(visibility: private)
 func decodeJSONFileValue<T>(_ type: T.Type, from data: Data) throws -> T {
     guard let decodableType = T.self as? any Decodable.Type else {
         preconditionFailure("SMLocalPersistence Value must be Codable")

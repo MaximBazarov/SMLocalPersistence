@@ -16,6 +16,7 @@ import Foundation
 import StateManagement
 
 /// Writes or deletes one JSON file. Throws on encode or IO. Writes no Values.
+@_documentation(visibility: private)
 struct PersistJSONFile<Value>: ThrowingSyncOperation {
     let root: URL
     let location: JSONFileLocation
@@ -44,6 +45,7 @@ struct PersistJSONFile<Value>: ThrowingSyncOperation {
     }
 }
 
+@_documentation(visibility: private)
 enum PersistJSONFileError: Error {
     case encoding(EncodingError)
     case io

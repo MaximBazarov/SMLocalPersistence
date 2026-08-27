@@ -16,6 +16,7 @@ import Foundation
 import StateManagement
 
 /// Writes or deletes one Keychain item. Throws on encode or SecItem. Writes no Values.
+@_documentation(visibility: private)
 struct PersistKeychain<Value>: ThrowingSyncOperation {
     let identity: KeychainIdentity
     let account: String
@@ -44,6 +45,7 @@ struct PersistKeychain<Value>: ThrowingSyncOperation {
     }
 }
 
+@_documentation(visibility: private)
 enum PersistKeychainError: Error {
     case encoding(EncodingError)
     case keychain(KeychainFailure)

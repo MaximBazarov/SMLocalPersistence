@@ -16,6 +16,7 @@ import Foundation
 import StateManagement
 
 /// Writes one UserDefaults key. Throws on encode. Writes no Values.
+@_documentation(visibility: private)
 struct PersistUserDefaults<Value>: ThrowingSyncOperation {
     let defaults: UserDefaults
     let key: String

@@ -19,6 +19,9 @@ import StateManagement
 /// Test and preview overlay of Persistence identity. Owns the Environments it creates.
 ///
 /// Construct, then `defer { clear() }`. Overlay exists before first `onRead`. Locators stay private.
+///
+/// DEBUG SwiftUI: `.sharedEnvironment(.isolatedPersistence)` and `.seedEnvironment(.isolatedPersistence) { }`
+/// construct IsolatedPersistence per View identity. `.sharedEnvironment(iso)` retains a handle you own.
 @MainActor
 public final class IsolatedPersistence {
     public let environment: SharedEnvironment
@@ -204,7 +207,8 @@ struct PersistOutTimeout: Error {
 }
 
 #if DEBUG
-/// Token for `.sharedEnvironment(.isolatedPersistence)`. The modifier holds IsolatedPersistence per View identity.
+/// Token for DEBUG `.sharedEnvironment(.isolatedPersistence)` and `.seedEnvironment(.isolatedPersistence) { }`.
+/// The modifier holds IsolatedPersistence per View identity.
 public enum IsolatedPersistenceToken: Sendable {
     case isolatedPersistence
 }

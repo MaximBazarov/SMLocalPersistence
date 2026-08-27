@@ -23,7 +23,7 @@ extension View {
         IsolatedPersistenceHost(isolatedPersistence: isolatedPersistence, content: self)
     }
 
-    /// Constructs IsolatedPersistence per View identity, injects it, and retains it for this View.
+    /// DEBUG `.sharedEnvironment(.isolatedPersistence)`. Constructs IsolatedPersistence per View identity.
     public func sharedEnvironment(_ token: IsolatedPersistenceToken) -> some View {
         TokenIsolatedPersistenceHost(content: self)
     }
@@ -37,7 +37,7 @@ extension View {
         return sharedEnvironment(isolatedPersistence)
     }
 
-    /// Constructs IsolatedPersistence per View identity, seeds it, injects it, and retains it.
+    /// DEBUG `.seedEnvironment(.isolatedPersistence) { }`. Constructs IsolatedPersistence per View identity, then seeds.
     public func seedEnvironment(
         _ token: IsolatedPersistenceToken,
         @SeedOperationsBuilder _ operations: () -> [any SyncOperation]

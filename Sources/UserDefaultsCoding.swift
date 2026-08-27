@@ -22,6 +22,7 @@ private struct SMUDDecodableBox<Value: Decodable>: Decodable {
     var value: Value
 }
 
+@_documentation(visibility: private)
 func encodeUserDefaultsValue<T>(_ value: T) throws(EncodingError) -> Data {
     guard let encodable = value as? any Encodable else {
         preconditionFailure("SMLocalPersistence Value must be Codable")
@@ -29,6 +30,7 @@ func encodeUserDefaultsValue<T>(_ value: T) throws(EncodingError) -> Data {
     return try encodeBoxed(encodable)
 }
 
+@_documentation(visibility: private)
 func decodeUserDefaultsValue<T>(_ type: T.Type, from data: Data) throws -> T {
     guard let decodableType = T.self as? any Decodable.Type else {
         preconditionFailure("SMLocalPersistence Value must be Codable")
