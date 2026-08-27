@@ -41,7 +41,7 @@ struct JSONFileStrategyTests {
         defer { iso.clear() }
 
         iso.environment.perform(SetBody(value: "hello"))
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.body))
+        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
         #expect(iso.additionalEnvironment().read(\DraftNotes.body) == "hello")
     }
@@ -53,7 +53,7 @@ struct JSONFileStrategyTests {
 
         #expect(iso.environment.read(\DraftNotes.body) == "")
         await #expect(throws: PersistOutTimeout.self) {
-            try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.body))
+            try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
         }
     }
 }

@@ -27,60 +27,54 @@ public final class KeychainStrategy: AsyncStrategy {
         self.env = env
     }
 
-    public func onRead<Storage: StateContainer, Value>(
-        _ keyPath: KeyPath<Storage, Value>,
+    public func onRead<Storage: StateContainer, Value, Status>(
+        _ keyPath: KeyPath<Storage, AsyncState<KeychainStrategy, Value, Status>>,
         policy: Policy,
         current: Value
     ) {
-        guard let writable = keyPath as? WritableKeyPath<Storage, Value> else {
-            return
-        }
         let identity = PersistenceOverlay.keychain(policy: policy, environmentID: env.environmentID)
         let account = keychainAccount(keyPath)
         do {
             if let data = try copyKeychainData(identity: identity, account: account) {
-                applyEncoded(data, keyPath: writable)
+                applyEncoded(data, keyPath: keyPath)
             } else {
-                env.apply(current, keyPath: writable)
+                env.apply(current, keyPath: keyPath)
             }
         } catch {
             env.fail(error, keyPath: keyPath)
         }
     }
 
-    public func onRead<Storage: StateContainer, Key: Hashable, Value>(
-        _ keyPath: KeyPath<Storage, [Key: Value]>,
+    public func onRead<Storage: StateContainer, Key: Hashable, Value, Status>(
+        _ keyPath: KeyPath<Storage, AsyncState<KeychainStrategy, [Key: Value], Status>>,
         key: Key,
         policy: Policy,
         current: Value?
     ) {
-        guard let writable = keyPath as? WritableKeyPath<Storage, [Key: Value]> else {
-            return
-        }
         let identity = PersistenceOverlay.keychain(policy: policy, environmentID: env.environmentID)
         let account = keychainAccount(keyPath, key: key)
         do {
             if let data = try copyKeychainData(identity: identity, account: account) {
-                applyEncoded(data, keyPath: writable, key: key)
+                applyEncoded(data, keyPath: keyPath, key: key)
             } else if let current {
-                env.apply(current, keyPath: writable, key: key)
+                env.apply(current, keyPath: keyPath, key: key)
             }
         } catch {
             env.fail(error, keyPath: keyPath, key: key)
         }
     }
 
-    public func onWrite<Storage: StateContainer, Value>(
+    public func onWrite<Storage: StateContainer, Value, Status>(
         _ value: Value,
-        _ keyPath: KeyPath<Storage, Value>,
+        _ keyPath: KeyPath<Storage, AsyncState<KeychainStrategy, Value, Status>>,
         policy: Policy
     ) {
         persist(value, account: keychainAccount(keyPath), policy: policy)
     }
 
-    public func onWrite<Storage: StateContainer, Key: Hashable, Value>(
+    public func onWrite<Storage: StateContainer, Key: Hashable, Value, Status>(
         _ value: Value,
-        _ keyPath: KeyPath<Storage, [Key: Value]>,
+        _ keyPath: KeyPath<Storage, AsyncState<KeychainStrategy, [Key: Value], Status>>,
         key: Key,
         policy: Policy
     ) {
@@ -96,9 +90,9 @@ public final class KeychainStrategy: AsyncStrategy {
         }
     }
 
-    private func applyEncoded<Storage: StateContainer, Value>(
+    private func applyEncoded<Storage: StateContainer, Value, Status>(
         _ data: Data,
-        keyPath: WritableKeyPath<Storage, Value>
+        keyPath: KeyPath<Storage, AsyncState<KeychainStrategy, Value, Status>>
     ) {
         do {
             let value: Value = try decodeUserDefaultsValue(Value.self, from: data)
@@ -120,9 +114,9 @@ public final class KeychainStrategy: AsyncStrategy {
         }
     }
 
-    private func applyEncoded<Storage: StateContainer, Key: Hashable, Value>(
+    private func applyEncoded<Storage: StateContainer, Key: Hashable, Value, Status>(
         _ data: Data,
-        keyPath: WritableKeyPath<Storage, [Key: Value]>,
+        keyPath: KeyPath<Storage, AsyncState<KeychainStrategy, [Key: Value], Status>>,
         key: Key
     ) {
         do {

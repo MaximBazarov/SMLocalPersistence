@@ -29,7 +29,7 @@ struct IsolatedPersistenceViewTests {
 
     @Test("sharedEnvironment(iso) retains IsolatedPersistence and does not write .standard")
     func sharedEnvironmentHandleDoesNotTouchStandard() async throws {
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         let before = UserDefaults.standard.data(forKey: key)
         let iso = IsolatedPersistence()
         defer { iso.clear() }
@@ -46,7 +46,7 @@ struct IsolatedPersistenceViewTests {
 
     @Test("sharedEnvironment(.isolatedPersistence) does not write .standard")
     func sharedEnvironmentTokenDoesNotTouchStandard() {
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         let before = UserDefaults.standard.data(forKey: key)
 
         let host = HostedView.mount(ThemeLabel().sharedEnvironment(.isolatedPersistence))
@@ -57,7 +57,7 @@ struct IsolatedPersistenceViewTests {
 
     @Test("seedEnvironment(iso) seeds IsolatedPersistence then injects")
     func seedEnvironmentHandleDoesNotTouchStandard() async throws {
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         let before = UserDefaults.standard.data(forKey: key)
         let iso = IsolatedPersistence()
         defer { iso.clear() }
@@ -77,7 +77,7 @@ struct IsolatedPersistenceViewTests {
 
     @Test("seedEnvironment(.isolatedPersistence) seeds then injects without writing .standard")
     func seedEnvironmentTokenDoesNotTouchStandard() {
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         let before = UserDefaults.standard.data(forKey: key)
 
         let host = HostedView.mount(

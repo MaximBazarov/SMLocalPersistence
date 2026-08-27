@@ -41,7 +41,7 @@ struct JSONFileKeyedTests {
         iso.environment.preheat(\NoteBag.notes, key: "a")
         iso.environment.perform(SetBagNote(key: "a", value: "one"))
 
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\NoteBag.notes, key: "a"))
+        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\NoteBag.$notes, key: "a"))
 
         let env2 = iso.additionalEnvironment()
         #expect(env2.read(\NoteBag.notes, key: "a") == "one")
@@ -61,15 +61,15 @@ struct JSONFileKeyedTests {
         iso.environment.perform(SetBagNote(key: "a", value: "one"))
         iso.environment.perform(SetBagNote(key: "b", value: "two"))
 
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\NoteBag.notes, key: "a"))
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\NoteBag.notes, key: "b"))
+        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\NoteBag.$notes, key: "a"))
+        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\NoteBag.$notes, key: "b"))
 
         let env2 = iso.additionalEnvironment()
         #expect(env2.read(\NoteBag.notes, key: "a") == "one")
         #expect(env2.read(\NoteBag.notes, key: "b") == "two")
         #expect(
-            jsonFileLocation(\NoteBag.notes, key: "a")
-                != jsonFileLocation(\NoteBag.notes, key: "b")
+            jsonFileLocation(\NoteBag.$notes, key: "a")
+                != jsonFileLocation(\NoteBag.$notes, key: "b")
         )
     }
 }

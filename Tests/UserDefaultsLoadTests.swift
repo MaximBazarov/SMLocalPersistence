@@ -65,7 +65,7 @@ struct UserDefaultsLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         iso.plant(Data([0x00, 0x01, 0x02]), forKey: key)
 
         #expect(iso.environment.read(\ThemePrefs.theme) == "system")
@@ -83,7 +83,7 @@ struct UserDefaultsLoadTests {
         #expect(iso.environment.read(\ThemePrefs.theme) == "system")
         iso.environment.perform(SetTheme(value: "dark"))
 
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         try await iso.waitForPersistOut(key: key)
 
         let env2 = iso.additionalEnvironment()
@@ -101,7 +101,7 @@ struct UserDefaultsLoadTests {
 
         iso.environment.preheat(\OptionalPrefs.nickname)
         iso.environment.perform(SetNickname(value: "ada"))
-        let key = "smud.\(String(describing: \OptionalPrefs.nickname))"
+        let key = "smud.\(String(describing: \OptionalPrefs.$nickname))"
         try await iso.waitForPersistOut(key: key)
 
         iso.environment.perform(SetNickname(value: nil))

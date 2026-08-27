@@ -81,7 +81,7 @@ struct JSONFileLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        let location = jsonFileLocation(\DraftNotes.body)
+        let location = jsonFileLocation(\DraftNotes.$body)
         try iso.plantJSON(Data([0x00, 0x01, 0x02]), location: location)
 
         #expect(iso.environment.read(\DraftNotes.body) == "")
@@ -103,7 +103,7 @@ struct JSONFileLoadTests {
         #expect(iso.environment.read(\DraftNotes.body) == "")
         iso.environment.perform(SetBody(value: "hello"))
 
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.body))
+        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
         let env2 = iso.additionalEnvironment()
         #expect(env2.read(\DraftNotes.body) == "hello")
@@ -120,7 +120,7 @@ struct JSONFileLoadTests {
 
         iso.environment.preheat(\OptionalNotes.subtitle)
         iso.environment.perform(SetSubtitle(value: "draft"))
-        let location = jsonFileLocation(\OptionalNotes.subtitle)
+        let location = jsonFileLocation(\OptionalNotes.$subtitle)
         try await iso.waitForJSONPersistOut(location: location)
 
         iso.environment.perform(SetSubtitle(value: nil))
@@ -140,7 +140,7 @@ struct JSONFileLoadTests {
         defer { iso.clear() }
 
         iso.environment.perform(SetBody(value: "hello"))
-        let location = jsonFileLocation(\DraftNotes.body)
+        let location = jsonFileLocation(\DraftNotes.$body)
         try await iso.waitForJSONPersistOut(location: location)
 
         let data = try #require(iso.jsonFileData(location: location))

@@ -42,7 +42,7 @@ struct JSONFileIsolationTests {
 
         #expect(iso.environment.read(\DraftNotes.body) == "")
         iso.environment.perform(SetBody(value: "hello"))
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.body))
+        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
         #expect(iso.additionalEnvironment().read(\DraftNotes.body) == "hello")
 
@@ -52,7 +52,7 @@ struct JSONFileIsolationTests {
             !FileManager.default.fileExists(
                 atPath: jsonFileURL(
                     root: JSONFileTestRoot.production,
-                    location: jsonFileLocation(\DraftNotes.body)
+                    location: jsonFileLocation(\DraftNotes.$body)
                 ).path
             )
         )
@@ -67,7 +67,7 @@ struct JSONFileIsolationTests {
 
         #expect(isoA.environment.read(\DraftNotes.body) == "")
         isoA.environment.perform(SetBody(value: "hello"))
-        try await isoA.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.body))
+        try await isoA.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
         #expect(isoB.environment.read(\DraftNotes.body) == "")
         guard case .settled = isoB.environment.read(\DraftNotes.$body.status) else {
@@ -86,7 +86,7 @@ struct JSONFileIsolationTests {
 
         iso.environment.preheat(\DraftNotes.body)
         iso.environment.perform(SetBody(value: "hello"))
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.body))
+        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
         let env2 = iso.additionalEnvironment()
         #expect(env2.read(\DraftNotes.body) == "hello")
@@ -106,7 +106,7 @@ struct JSONFileIsolationTests {
 
         #expect(iso.environment.read(\DraftNotes.body) == "")
         iso.environment.perform(SetBody(value: "hello"))
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.body))
+        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
         iso.clear()
         #expect(iso.additionalEnvironment().read(\DraftNotes.body) == "")
@@ -122,7 +122,7 @@ struct JSONFileIsolationTests {
             Write(\DraftNotes.body, "hello")
         }
         iso.environment.preheat(\DraftNotes.body)
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.body))
+        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
         #expect(iso.additionalEnvironment().read(\DraftNotes.body) == "hello")
     }

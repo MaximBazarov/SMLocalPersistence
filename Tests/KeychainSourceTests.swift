@@ -41,7 +41,7 @@ struct KeychainStrategyTests {
         defer { iso.clear() }
 
         iso.environment.perform(SetToken(value: "secret"))
-        let account = "smkc.\(String(describing: \SessionSecrets.token))"
+        let account = "smkc.\(String(describing: \SessionSecrets.$token))"
         try await iso.waitForKeychainPersistOut(account: account)
 
         #expect(iso.additionalEnvironment().read(\SessionSecrets.token) == "secret")
@@ -53,7 +53,7 @@ struct KeychainStrategyTests {
         defer { iso.clear() }
 
         #expect(iso.environment.read(\SessionSecrets.token) == "")
-        let account = "smkc.\(String(describing: \SessionSecrets.token))"
+        let account = "smkc.\(String(describing: \SessionSecrets.$token))"
         await #expect(throws: PersistOutTimeout.self) {
             try await iso.waitForKeychainPersistOut(account: account)
         }

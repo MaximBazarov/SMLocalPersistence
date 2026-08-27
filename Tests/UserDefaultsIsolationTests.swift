@@ -31,7 +31,7 @@ struct UserDefaultsIsolationTests {
         #expect(isoA.environment.read(\ThemePrefs.theme) == "system")
         isoA.environment.perform(SetTheme(value: "dark"))
         try await isoA.waitForPersistOut(
-            key: "smud.\(String(describing: \ThemePrefs.theme))"
+            key: "smud.\(String(describing: \ThemePrefs.$theme))"
         )
 
         #expect(isoB.environment.read(\ThemePrefs.theme) == "system")

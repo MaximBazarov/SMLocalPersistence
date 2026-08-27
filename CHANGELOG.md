@@ -6,6 +6,10 @@ All notable changes to SMLocalPersistence are recorded here. The format follows 
 
 Experimental Satellite `0.9.0`. Depends on StateManagement `0.9.2`. In-repo DocC only, no Swift Package Index until Satellite `1.0.0`. Not a freeze.
 
+### Changed
+
+- Strategy kicks take the `$` Address. No Value-path `WritableKeyPath` cast in `onRead`. 0.9.x break, no shim.
+
 ### Added
 
 - In-repo DocC catalog: Policy, UserDefaults, Keychain, JSON file, Tests and previews. Persist internals hidden. No SPI.

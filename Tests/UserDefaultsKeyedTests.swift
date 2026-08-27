@@ -41,7 +41,7 @@ struct UserDefaultsKeyedTests {
         iso.environment.preheat(\FlagPrefs.flags, key: "a")
         iso.environment.perform(SetFlag(key: "a", value: true))
 
-        let key = "smud.\(String(describing: \FlagPrefs.flags))#a"
+        let key = "smud.\(String(describing: \FlagPrefs.$flags))#a"
         try await iso.waitForPersistOut(key: key)
 
         let env2 = iso.additionalEnvironment()

@@ -41,7 +41,7 @@ struct KeychainKeyedTests {
         iso.environment.preheat(\TokenBag.tokens, key: "a")
         iso.environment.perform(SetBagToken(key: "a", value: "one"))
 
-        let account = "smkc.\(String(describing: \TokenBag.tokens))#a"
+        let account = "smkc.\(String(describing: \TokenBag.$tokens))#a"
         try await iso.waitForKeychainPersistOut(account: account)
 
         let env2 = iso.additionalEnvironment()

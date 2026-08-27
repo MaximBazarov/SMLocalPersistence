@@ -49,7 +49,7 @@ struct KeychainIsolationTests {
 
         #expect(iso.environment.read(\SessionSecrets.token) == "")
         iso.environment.perform(SetToken(value: "secret"))
-        let account = "smkc.\(String(describing: \SessionSecrets.token))"
+        let account = "smkc.\(String(describing: \SessionSecrets.$token))"
         try await iso.waitForKeychainPersistOut(account: account)
 
         #expect(iso.additionalEnvironment().read(\SessionSecrets.token) == "secret")
@@ -68,7 +68,7 @@ struct KeychainIsolationTests {
         #expect(isoA.environment.read(\SessionSecrets.token) == "")
         isoA.environment.perform(SetToken(value: "secret"))
         try await isoA.waitForKeychainPersistOut(
-            account: "smkc.\(String(describing: \SessionSecrets.token))"
+            account: "smkc.\(String(describing: \SessionSecrets.$token))"
         )
 
         #expect(isoB.environment.read(\SessionSecrets.token) == "")
@@ -85,7 +85,7 @@ struct KeychainIsolationTests {
 
         iso.environment.preheat(\iCloudSecrets.token)
         iso.environment.perform(SetiCloudToken(value: "secret"))
-        let account = "smkc.\(String(describing: \iCloudSecrets.token))"
+        let account = "smkc.\(String(describing: \iCloudSecrets.$token))"
         try await iso.waitForKeychainPersistOut(account: account)
 
         let env2 = iso.additionalEnvironment()
@@ -103,7 +103,7 @@ struct KeychainIsolationTests {
     func clearDeletesKeychainItems() async throws {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
-        let account = "smkc.\(String(describing: \SessionSecrets.token))"
+        let account = "smkc.\(String(describing: \SessionSecrets.$token))"
 
         #expect(iso.environment.read(\SessionSecrets.token) == "")
         iso.environment.perform(SetToken(value: "secret"))
@@ -118,7 +118,7 @@ struct KeychainIsolationTests {
     func seedPersistsKeychainWrites() async throws {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
-        let account = "smkc.\(String(describing: \SessionSecrets.token))"
+        let account = "smkc.\(String(describing: \SessionSecrets.$token))"
 
         iso.seed {
             Write(\SessionSecrets.token, "secret")

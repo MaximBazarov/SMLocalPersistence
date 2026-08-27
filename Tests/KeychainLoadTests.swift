@@ -82,7 +82,7 @@ struct KeychainLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        let account = "smkc.\(String(describing: \SessionSecrets.token))"
+        let account = "smkc.\(String(describing: \SessionSecrets.$token))"
         try iso.plantKeychain(Data([0x00, 0x01, 0x02]), account: account)
 
         #expect(iso.environment.read(\SessionSecrets.token) == "")
@@ -104,7 +104,7 @@ struct KeychainLoadTests {
         #expect(iso.environment.read(\SessionSecrets.token) == "")
         iso.environment.perform(SetToken(value: "secret"))
 
-        let account = "smkc.\(String(describing: \SessionSecrets.token))"
+        let account = "smkc.\(String(describing: \SessionSecrets.$token))"
         try await iso.waitForKeychainPersistOut(account: account)
 
         let env2 = iso.additionalEnvironment()
@@ -122,7 +122,7 @@ struct KeychainLoadTests {
 
         iso.environment.preheat(\OptionalSecrets.pin)
         iso.environment.perform(SetPin(value: "1234"))
-        let account = "smkc.\(String(describing: \OptionalSecrets.pin))"
+        let account = "smkc.\(String(describing: \OptionalSecrets.$pin))"
         try await iso.waitForKeychainPersistOut(account: account)
 
         iso.environment.perform(SetPin(value: nil))

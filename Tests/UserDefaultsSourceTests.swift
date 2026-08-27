@@ -41,7 +41,7 @@ struct UserDefaultsStrategyTests {
         defer { iso.clear() }
 
         #expect(iso.environment.read(\ThemePrefs.theme) == "system")
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         await #expect(throws: PersistOutTimeout.self) {
             try await iso.waitForPersistOut(key: key)
         }
@@ -53,7 +53,7 @@ struct UserDefaultsStrategyTests {
         defer { iso.clear() }
 
         iso.environment.perform(SetTheme(value: "dark"))
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         try await iso.waitForPersistOut(key: key)
 
         #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "dark")

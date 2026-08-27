@@ -23,12 +23,12 @@ struct JSONFilePathTests {
 
     @Test("Folder name is the module-qualified Container type")
     func folderIsReflectingType() {
-        #expect(jsonFileLocation(\DraftNotes.body).folder == String(reflecting: DraftNotes.self))
+        #expect(jsonFileLocation(\DraftNotes.$body).folder == String(reflecting: DraftNotes.self))
     }
 
     @Test("Encoded filenames contain no backslash or path separator")
     func encodedFilenameHasNoIllegalCharacters() {
-        let name = jsonFileLocation(\DraftNotes.body).file
+        let name = jsonFileLocation(\DraftNotes.$body).file
         #expect(!name.contains("\\"))
         #expect(!name.contains("/"))
         #expect(!name.contains(":"))
@@ -37,20 +37,20 @@ struct JSONFilePathTests {
     @Test("Distinct Addresses produce distinct filenames")
     func distinctAddressesStayDistinct() {
         #expect(
-            jsonFileLocation(\DraftNotes.body).file
-                != jsonFileLocation(\OptionalNotes.subtitle).file
+            jsonFileLocation(\DraftNotes.$body).file
+                != jsonFileLocation(\OptionalNotes.$subtitle).file
         )
         #expect(
-            jsonFileLocation(\NoteBag.notes, key: "a")
-                != jsonFileLocation(\NoteBag.notes, key: "b")
+            jsonFileLocation(\NoteBag.$notes, key: "a")
+                != jsonFileLocation(\NoteBag.$notes, key: "b")
         )
     }
 
     @Test("Two Containers do not share a folder")
     func containersGetOwnFolders() {
         #expect(
-            jsonFileLocation(\DraftNotes.body).folder
-                != jsonFileLocation(\OtherNotes.body).folder
+            jsonFileLocation(\DraftNotes.$body).folder
+                != jsonFileLocation(\OtherNotes.$body).folder
         )
     }
 }

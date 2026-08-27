@@ -23,7 +23,7 @@ struct IsolatedPersistenceTests {
 
     @Test("IsolatedPersistence Sync write does not write UserDefaults.standard")
     func isolatedWriteDoesNotTouchStandard() async throws {
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         let before = UserDefaults.standard.data(forKey: key)
         let iso = IsolatedPersistence()
         defer { iso.clear() }
@@ -41,7 +41,7 @@ struct IsolatedPersistenceTests {
     func additionalEnvironmentSeesPersistOut() async throws {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
 
         iso.environment.preheat(\ThemePrefs.theme)
         iso.environment.perform(SetTheme(value: "dark"))
@@ -59,7 +59,7 @@ struct IsolatedPersistenceTests {
     func clearDeletesSuite() async throws {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
 
         #expect(iso.environment.read(\ThemePrefs.theme) == "system")
         iso.environment.perform(SetTheme(value: "dark"))
@@ -71,7 +71,7 @@ struct IsolatedPersistenceTests {
 
     @Test("SharedEnvironment() stays production")
     func sharedEnvironmentStaysProduction() async throws {
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
@@ -88,7 +88,7 @@ struct IsolatedPersistenceTests {
     func seedPersistsOnIsolatedEnvironment() async throws {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
 
         iso.seed {
             Write(\ThemePrefs.theme, "dark")
@@ -104,7 +104,7 @@ struct IsolatedPersistenceTests {
     func overlaySurvivesReset() async throws {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
-        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
 
         iso.environment.preheat(\ThemePrefs.theme)
         iso.environment.perform(SetTheme(value: "dark"))
@@ -122,7 +122,7 @@ struct IsolatedPersistenceTests {
 
         let iso = IsolatedPersistence()
         defer { iso.clear() }
-        let key = "smud.\(String(describing: \NamedSuitePrefs.theme))"
+        let key = "smud.\(String(describing: \NamedSuitePrefs.$theme))"
 
         iso.environment.preheat(\NamedSuitePrefs.theme)
         iso.environment.perform(SetNamedSuiteTheme(value: "dark"))
@@ -142,7 +142,7 @@ struct IsolatedPersistenceTests {
         let env = SharedEnvironment()
         #expect(env.read(\NamedSuitePrefs.theme) == "system")
         env.perform(SetNamedSuiteTheme(value: "dark"))
-        let key = "smud.\(String(describing: \NamedSuitePrefs.theme))"
+        let key = "smud.\(String(describing: \NamedSuitePrefs.$theme))"
         try await waitForUserDefaultsData(defaults, key: key)
 
         let env2 = SharedEnvironment()
