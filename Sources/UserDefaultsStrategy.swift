@@ -13,7 +13,10 @@
 //===----------------------------------------------------------------------===//
 
 import Foundation
+import OSLog
 import StateManagement
+
+private let userDefaultsLog = Logger(subsystem: "SMLocalPersistence", category: "UserDefaults")
 
 /// UserDefaults strategy. One instance per Environment. The app does not construct it.
 @MainActor
@@ -51,7 +54,7 @@ public final class UserDefaultsStrategy: AsyncStrategy {
         let udKey = userDefaultsKey(keyPath, key: key)
         if let data = defaults.data(forKey: udKey) {
             applyEncoded(data, keyPath: keyPath, key: key)
-        } else if let current {
+        } else {
             env.apply(current, keyPath: keyPath, key: key)
         }
     }
@@ -78,7 +81,8 @@ public final class UserDefaultsStrategy: AsyncStrategy {
         do {
             try env.perform(PersistUserDefaults(defaults: defaults, key: key, value: value))
         } catch {
-            // Persist-out does not fail Source status.
+            // Persist-out does not fail Source status (ADR 0020).
+            userDefaultsLog.error("Persist-out failed: \(error.localizedDescription)")
         }
     }
 

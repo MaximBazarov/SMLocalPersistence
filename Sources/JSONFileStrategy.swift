@@ -13,7 +13,10 @@
 //===----------------------------------------------------------------------===//
 
 import Foundation
+import OSLog
 import StateManagement
+
+private let jsonFileStrategyLog = Logger(subsystem: "SMLocalPersistence", category: "JSONFile")
 
 /// JSON-file strategy. One instance per Environment. The app does not construct it.
 @MainActor
@@ -56,7 +59,7 @@ public final class JSONFileStrategy: AsyncStrategy {
         do {
             if let data = try copyJSONFileData(root: root, location: location) {
                 applyEncoded(data, keyPath: keyPath, key: key)
-            } else if let current {
+            } else {
                 env.apply(current, keyPath: keyPath, key: key)
             }
         } catch {
@@ -86,7 +89,8 @@ public final class JSONFileStrategy: AsyncStrategy {
         do {
             try env.perform(PersistJSONFile(root: root, location: location, value: value))
         } catch {
-            // Persist-out does not fail Source status.
+            // Persist-out does not fail Source status (ADR 0020).
+            jsonFileStrategyLog.error("Persist-out failed: \(error.localizedDescription)")
         }
     }
 

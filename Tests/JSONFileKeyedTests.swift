@@ -33,6 +33,18 @@ struct SetBagNote: SyncOperation {
 @MainActor
 struct JSONFileKeyedTests {
 
+    @Test("A missing keyed optional file settles nil")
+    func missingKeyedFileSettlesNil() throws {
+        let iso = IsolatedPersistence()
+        defer { iso.clear() }
+
+        #expect(iso.environment.read(\NoteBag.notes, key: "missing") == nil)
+        guard case .settled = iso.environment.read(\NoteBag.$notes.status, key: "missing") else {
+            Issue.record("expected settled")
+            return
+        }
+    }
+
     @Test("A keyed Sync write persists; a second Environment loads that key")
     func keyedPersistOutLoadsInSecondEnvironment() async throws {
         let iso = IsolatedPersistence()

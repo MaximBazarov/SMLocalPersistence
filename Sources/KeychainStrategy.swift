@@ -13,7 +13,10 @@
 //===----------------------------------------------------------------------===//
 
 import Foundation
+import OSLog
 import StateManagement
+
+private let keychainStrategyLog = Logger(subsystem: "SMLocalPersistence", category: "Keychain")
 
 /// Keychain strategy. One instance per Environment. The app does not construct it.
 @MainActor
@@ -56,7 +59,7 @@ public final class KeychainStrategy: AsyncStrategy {
         do {
             if let data = try copyKeychainData(identity: identity, account: account) {
                 applyEncoded(data, keyPath: keyPath, key: key)
-            } else if let current {
+            } else {
                 env.apply(current, keyPath: keyPath, key: key)
             }
         } catch {
@@ -86,7 +89,8 @@ public final class KeychainStrategy: AsyncStrategy {
         do {
             try env.perform(PersistKeychain(identity: identity, account: account, value: value))
         } catch {
-            // Persist-out does not fail Source status.
+            // Persist-out does not fail Source status (ADR 0020).
+            keychainStrategyLog.error("Persist-out failed: \(error.localizedDescription)")
         }
     }
 

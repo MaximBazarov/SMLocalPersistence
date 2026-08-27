@@ -13,8 +13,11 @@
 //===----------------------------------------------------------------------===//
 
 import Foundation
+import OSLog
 import Security
 import StateManagement
+
+private let isolatedLog = Logger(subsystem: "SMLocalPersistence", category: "IsolatedPersistence")
 
 /// Test and preview overlay of Persistence identity. Owns the Environments it creates.
 ///
@@ -171,7 +174,12 @@ public final class IsolatedPersistence {
     }
 
     func jsonFileData(location: JSONFileLocation) -> Data? {
-        try? copyJSONFileData(root: jsonRoot, location: location)
+        do {
+            return try copyJSONFileData(root: jsonRoot, location: location)
+        } catch {
+            isolatedLog.error("IsolatedPersistence JSON copy failed: \(error.localizedDescription)")
+            return nil
+        }
     }
 
     private var isolatedKeychainIdentity: KeychainIdentity {
