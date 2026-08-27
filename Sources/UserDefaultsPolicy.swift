@@ -15,10 +15,10 @@
 import Foundation
 import StateManagement
 
-/// Policy for ``UserDefaultsSource``. Call site `@AsyncState(.userDefaults)`.
+/// Policy for ``UserDefaultsStrategy``. Call site `@AsyncState(.userDefaults)`.
 ///
 /// Shipped ``userDefaults`` is `.standard`. A named suite is ``init(suiteName:)``. Empty name is
-/// `preconditionFailure`. IsolatedPersistence overlays Persistence identity at `provide`.
+/// `preconditionFailure`. IsolatedPersistence overlays Persistence identity at `onRead`.
 public struct UserDefaultsPolicy: Sendable, Equatable {
     enum Identity: Sendable, Equatable {
         case standard
@@ -31,7 +31,7 @@ public struct UserDefaultsPolicy: Sendable, Equatable {
         self.identity = identity
     }
 
-    /// Selects ``UserDefaultsSource``. Persistence identity is `UserDefaults.standard`.
+    /// Selects ``UserDefaultsStrategy``. Persistence identity is `UserDefaults.standard`.
     public static let userDefaults = UserDefaultsPolicy(identity: .standard)
 
     /// Named UserDefaults suite. Empty name is `preconditionFailure`.
@@ -55,19 +55,19 @@ public struct UserDefaultsPolicy: Sendable, Equatable {
     }
 }
 
-extension AsyncState where S == UserDefaultsSource {
-    /// Pins `S` to ``UserDefaultsSource``.
+extension AsyncState where S == UserDefaultsStrategy {
+    /// Pins `S` to ``UserDefaultsStrategy``.
     @_disfavoredOverload
     public convenience init(wrappedValue: Value, _ policy: UserDefaultsPolicy)
-        where Status == SourceStatus<UserDefaultsSource.Failure> {
+        where Status == SourceStatus<UserDefaultsStrategy.Failure> {
         self.init(wrappedValue: wrappedValue, policy: policy)
     }
 
-    /// Pins `S` to ``UserDefaultsSource``.
+    /// Pins `S` to ``UserDefaultsStrategy``.
     public convenience init<Key: Hashable, Output>(
         wrappedValue: [Key: Output],
         _ policy: UserDefaultsPolicy
-    ) where Value == [Key: Output], Status == [Key: SourceStatus<UserDefaultsSource.Failure>] {
+    ) where Value == [Key: Output], Status == [Key: SourceStatus<UserDefaultsStrategy.Failure>] {
         self.init(wrappedValue: wrappedValue, policy: policy)
     }
 }

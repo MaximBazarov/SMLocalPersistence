@@ -16,15 +16,15 @@ import Foundation
 import Security
 import StateManagement
 
-/// Load failure for ``KeychainSource``. Missing is not a case.
+/// Load failure for ``KeychainStrategy``. Missing is not a case.
 public enum KeychainFailure: Error {
     case osStatus(OSStatus)
     case decoding(DecodingError)
 }
 
-/// Policy for ``KeychainSource``. The app declares a static. No shipped `.keychain`.
+/// Policy for ``KeychainStrategy``. The app declares a static. No shipped `.keychain`.
 ///
-/// IsolatedPersistence overlays Persistence identity (`service`) at `provide` and forces
+/// IsolatedPersistence overlays Persistence identity (`service`) at `onRead` and forces
 /// `synchronizable = false` and `accessGroup = nil`. Accessibility stays on Policy.
 public struct KeychainPolicy: Sendable, Equatable {
     public let accessibility: String
@@ -49,19 +49,19 @@ public struct KeychainPolicy: Sendable, Equatable {
     }
 }
 
-extension AsyncState where S == KeychainSource {
-    /// Pins `S` to ``KeychainSource``.
+extension AsyncState where S == KeychainStrategy {
+    /// Pins `S` to ``KeychainStrategy``.
     @_disfavoredOverload
     public convenience init(wrappedValue: Value, _ policy: KeychainPolicy)
-        where Status == SourceStatus<KeychainSource.Failure> {
+        where Status == SourceStatus<KeychainStrategy.Failure> {
         self.init(wrappedValue: wrappedValue, policy: policy)
     }
 
-    /// Pins `S` to ``KeychainSource``.
+    /// Pins `S` to ``KeychainStrategy``.
     public convenience init<Key: Hashable, Output>(
         wrappedValue: [Key: Output],
         _ policy: KeychainPolicy
-    ) where Value == [Key: Output], Status == [Key: SourceStatus<KeychainSource.Failure>] {
+    ) where Value == [Key: Output], Status == [Key: SourceStatus<KeychainStrategy.Failure>] {
         self.init(wrappedValue: wrappedValue, policy: policy)
     }
 }

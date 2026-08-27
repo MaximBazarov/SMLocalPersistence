@@ -1,18 +1,26 @@
 # SMLocalPersistence
 
-UserDefaults persistence for [StateManagement](https://github.com). A Satellite: it owns the store. Core owns the Source seam.
+Local persistence for [StateManagement](https://github.com). A Satellite: it owns the store. Core owns the AsyncStrategy seam.
 
-## Source
+## AsyncStrategy
 
 ```swift
 final class Prefs: StateContainer {
     @AsyncState(.userDefaults) var theme: String = "system"
 }
+
+extension JSONFilePolicy {
+    static let drafts = JSONFilePolicy(root: appSupportDrafts)
+}
+
+final class Notes: StateContainer {
+    @AsyncState(.drafts) var body: String = ""
+}
 ```
 
-Values are `Codable`. The UserDefaults key is the Address (`smud.{path}` / `smud.{path}#{key}`). Load on first read or `preheat`. A Sync write to a bound Address persists once at notify.
+Values are `Codable`. UserDefaults keys and Keychain accounts are the Address. JSON-file is one file per Address, folders per Container type. Load on first read or `preheat`. A Sync write persists through `onWrite`.
 
-Tests and previews construct `IsolatedPersistence` and `defer { iso.clear() }`. Production Containers stay `@AsyncState(.userDefaults)`. `SharedEnvironment()` stays production.
+Tests and previews construct `IsolatedPersistence` and `defer { iso.clear() }`. Production Containers stay `@AsyncState(.userDefaults)` or an app Policy static. `SharedEnvironment()` stays production.
 
 ## Requirements
 

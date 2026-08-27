@@ -15,36 +15,36 @@
 import Foundation
 import StateManagement
 
-/// Writes or deletes one Keychain item. Throws on encode or SecItem. Writes no Values.
-struct PersistKeychain<Value>: ThrowingSyncOperation {
-    let identity: KeychainIdentity
-    let account: String
+/// Writes or deletes one JSON file. Throws on encode or IO. Writes no Values.
+struct PersistJSONFile<Value>: ThrowingSyncOperation {
+    let root: URL
+    let location: JSONFileLocation
     let value: Value
 
-    func perform(in env: SyncOperationEnvironment) throws(PersistKeychainError) {
+    func perform(in env: SyncOperationEnvironment) throws(PersistJSONFileError) {
         if isNilOptional(value) {
             do {
-                try deleteKeychainItem(identity: identity, account: account)
+                try deleteJSONFile(root: root, location: location)
             } catch {
-                throw PersistKeychainError.keychain(error)
+                throw PersistJSONFileError.io
             }
             return
         }
         let data: Data
         do {
-            data = try encodeUserDefaultsValue(value)
+            data = try encodeJSONFileValue(value)
         } catch {
-            throw PersistKeychainError.encoding(error)
+            throw PersistJSONFileError.encoding(error)
         }
         do {
-            try upsertKeychainData(identity: identity, account: account, data: data)
+            try writeJSONFileData(root: root, location: location, data: data)
         } catch {
-            throw PersistKeychainError.keychain(error)
+            throw PersistJSONFileError.io
         }
     }
 }
 
-enum PersistKeychainError: Error {
+enum PersistJSONFileError: Error {
     case encoding(EncodingError)
-    case keychain(KeychainFailure)
+    case io
 }

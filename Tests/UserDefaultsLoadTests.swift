@@ -25,6 +25,13 @@ final class OptionalPrefs: StateContainer {
     @AsyncState(.userDefaults) var nickname: String? = nil
 }
 
+struct SetNickname: SyncOperation {
+    let value: String?
+    func perform(in env: SyncOperationEnvironment) {
+        env.write(value, keyPath: \OptionalPrefs.nickname)
+    }
+}
+
 @Suite(.serialized)
 @MainActor
 struct UserDefaultsLoadTests {
@@ -82,6 +89,27 @@ struct UserDefaultsLoadTests {
         let env2 = iso.additionalEnvironment()
         #expect(env2.read(\ThemePrefs.theme) == "dark")
         guard case .settled = env2.read(\ThemePrefs.$theme.status) else {
+            Issue.record("expected settled")
+            return
+        }
+    }
+
+    @Test("Optional nil deletes the UserDefaults key")
+    func optionalNilDeletesKey() async throws {
+        let iso = IsolatedPersistence()
+        defer { iso.clear() }
+
+        iso.environment.preheat(\OptionalPrefs.nickname)
+        iso.environment.perform(SetNickname(value: "ada"))
+        let key = "smud.\(String(describing: \OptionalPrefs.nickname))"
+        try await iso.waitForPersistOut(key: key)
+
+        iso.environment.perform(SetNickname(value: nil))
+        try await iso.waitForRemoval(key: key)
+
+        let env2 = iso.additionalEnvironment()
+        #expect(env2.read(\OptionalPrefs.nickname) == nil)
+        guard case .settled = env2.read(\OptionalPrefs.$nickname.status) else {
             Issue.record("expected settled")
             return
         }

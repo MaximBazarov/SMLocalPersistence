@@ -15,11 +15,11 @@
 import Foundation
 import Testing
 import StateManagement
-import SMLocalPersistence
+@testable import SMLocalPersistence
 
 @Suite(.serialized)
 @MainActor
-struct UserDefaultsSourceTests {
+struct UserDefaultsStrategyTests {
 
     @Test("Preheat loads with no prior read")
     func preheatLoadsWithNoPriorRead() throws {
@@ -35,13 +35,27 @@ struct UserDefaultsSourceTests {
         }
     }
 
-    @Test("Seed before first read does not write the suite")
-    func seedBeforeProvideDoesNotWriteSuite() throws {
+    @Test("Missing onRead does not write the suite")
+    func missingOnReadDoesNotWriteSuite() async throws {
+        let iso = IsolatedPersistence()
+        defer { iso.clear() }
+
+        #expect(iso.environment.read(\ThemePrefs.theme) == "system")
+        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        await #expect(throws: PersistOutTimeout.self) {
+            try await iso.waitForPersistOut(key: key)
+        }
+    }
+
+    @Test("A Sync write persists without a prior read")
+    func writeWithoutPriorReadPersists() async throws {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
         iso.environment.perform(SetTheme(value: "dark"))
+        let key = "smud.\(String(describing: \ThemePrefs.theme))"
+        try await iso.waitForPersistOut(key: key)
 
-        #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "system")
+        #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "dark")
     }
 }

@@ -14,59 +14,43 @@
 
 import Foundation
 
-private struct SMUDEncodableBox<Value: Encodable>: Encodable {
-    var value: Value
-}
-
-private struct SMUDDecodableBox<Value: Decodable>: Decodable {
-    var value: Value
-}
-
-func encodeUserDefaultsValue<T>(_ value: T) throws(EncodingError) -> Data {
+func encodeJSONFileValue<T>(_ value: T) throws(EncodingError) -> Data {
     guard let encodable = value as? any Encodable else {
         preconditionFailure("SMLocalPersistence Value must be Codable")
     }
-    return try encodeBoxed(encodable)
+    return try encodeJSON(encodable)
 }
 
-func decodeUserDefaultsValue<T>(_ type: T.Type, from data: Data) throws -> T {
+func decodeJSONFileValue<T>(_ type: T.Type, from data: Data) throws -> T {
     guard let decodableType = T.self as? any Decodable.Type else {
         preconditionFailure("SMLocalPersistence Value must be Codable")
     }
-    let decoded = try decodeBoxed(decodableType, from: data)
+    let decoded = try decodeJSON(decodableType, from: data)
     guard let typed = decoded as? T else {
         throw DecodingError.typeMismatch(
             T.self,
-            DecodingError.Context(codingPath: [], debugDescription: "SMLocalPersistence box")
+            DecodingError.Context(codingPath: [], debugDescription: "JSON-file Value")
         )
     }
     return typed
 }
 
-private func encodeBoxed(_ value: any Encodable) throws(EncodingError) -> Data {
+private func encodeJSON(_ value: any Encodable) throws(EncodingError) -> Data {
     func wrap<T: Encodable>(_ value: T) throws(EncodingError) -> Data {
         do {
-            return try PropertyListEncoder().encode(SMUDEncodableBox(value: value))
+            return try JSONEncoder().encode(value)
         } catch let error as EncodingError {
             throw error
         } catch {
-            preconditionFailure("PropertyListEncoder.encode throws EncodingError")
+            preconditionFailure("JSONEncoder.encode throws EncodingError")
         }
     }
     return try wrap(value)
 }
 
-private func decodeBoxed(_ type: any Decodable.Type, from data: Data) throws -> Any {
+private func decodeJSON(_ type: any Decodable.Type, from data: Data) throws -> Any {
     func unwrap<T: Decodable>(_ type: T.Type) throws -> Any {
-        try PropertyListDecoder().decode(SMUDDecodableBox<T>.self, from: data).value
+        try JSONDecoder().decode(type, from: data)
     }
     return try unwrap(type)
-}
-
-func isNilOptional(_ value: Any) -> Bool {
-    let mirror = Mirror(reflecting: value)
-    guard mirror.displayStyle == .optional else {
-        return false
-    }
-    return mirror.children.isEmpty
 }

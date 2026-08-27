@@ -150,8 +150,8 @@ struct IsolatedPersistenceTests {
     }
 
     #if os(macOS)
-    @Test("Leftover provide after IsolatedPersistence is gone traps")
-    func leftoverProvideTraps() async {
+    @Test("Leftover onRead after IsolatedPersistence is gone traps")
+    func leftoverOnReadTraps() async {
         await #expect(processExitsWith: .failure) {
             await MainActor.run {
                 let env: SharedEnvironment

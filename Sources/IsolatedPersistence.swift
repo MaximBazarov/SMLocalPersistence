@@ -18,7 +18,7 @@ import StateManagement
 
 /// Test and preview overlay of Persistence identity. Owns the Environments it creates.
 ///
-/// Construct, then `defer { clear() }`. Overlay exists before first `provide`. Locators stay private.
+/// Construct, then `defer { clear() }`. Overlay exists before first `onRead`. Locators stay private.
 @MainActor
 public final class IsolatedPersistence {
     public let environment: SharedEnvironment
@@ -26,16 +26,26 @@ public final class IsolatedPersistence {
     private var additional: [SharedEnvironment] = []
     private let suiteName: String
     private let keychainService: String
+    private let jsonRoot: URL
     private let defaults: UserDefaults
 
     public init() {
-        let locator = "smlp.\(UUID().uuidString)"
+        let uuid = UUID().uuidString
+        let locator = "smlp.\(uuid)"
         guard let defaults = UserDefaults(suiteName: locator) else {
             preconditionFailure("IsolatedPersistence UserDefaults suite failed")
         }
         defaults.removePersistentDomain(forName: locator)
         suiteName = locator
         keychainService = locator
+        let jsonRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("smlp-\(uuid)", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: jsonRoot, withIntermediateDirectories: true)
+        } catch {
+            preconditionFailure("IsolatedPersistence JSON root failed")
+        }
+        self.jsonRoot = jsonRoot
         self.defaults = defaults
         environment = SharedEnvironment()
         PersistenceOverlay.register(
@@ -43,7 +53,8 @@ public final class IsolatedPersistence {
             environment: environment,
             handle: self,
             defaults: defaults,
-            keychainService: locator
+            keychainService: locator,
+            jsonRoot: jsonRoot
         )
     }
 
@@ -56,15 +67,17 @@ public final class IsolatedPersistence {
             environment: env,
             handle: self,
             defaults: defaults,
-            keychainService: keychainService
+            keychainService: keychainService,
+            jsonRoot: jsonRoot
         )
         return env
     }
 
-    /// Deletes the UUID UserDefaults suite and Keychain items IsolatedPersistence allocated.
+    /// Deletes the UUID UserDefaults suite, Keychain items, and JSON tree IsolatedPersistence allocated.
     public func clear() {
         defaults.removePersistentDomain(forName: suiteName)
         deleteKeychainItems(service: keychainService)
+        deleteJSONFileTree(root: jsonRoot)
     }
 
     /// Callers assert persist-out with `additionalEnvironment()` after this returns. Creating that Environment before the write lands persists the seed.
@@ -72,6 +85,18 @@ public final class IsolatedPersistence {
         let deadline = Date().addingTimeInterval(1)
         while Date() < deadline {
             if defaults.data(forKey: key) != nil {
+                return
+            }
+            try await Task.sleep(nanoseconds: 5_000_000)
+        }
+        throw PersistOutTimeout(key: key)
+    }
+
+    /// Callers assert removal with `additionalEnvironment()` after this returns.
+    func waitForRemoval(key: String) async throws {
+        let deadline = Date().addingTimeInterval(1)
+        while Date() < deadline {
+            if defaults.data(forKey: key) == nil {
                 return
             }
             try await Task.sleep(nanoseconds: 5_000_000)
@@ -113,6 +138,39 @@ public final class IsolatedPersistence {
         try upsertKeychainData(identity: isolatedKeychainIdentity, account: account, data: data)
     }
 
+    /// Callers assert persist-out with `additionalEnvironment()` after this returns.
+    func waitForJSONPersistOut(location: JSONFileLocation) async throws {
+        let deadline = Date().addingTimeInterval(1)
+        while Date() < deadline {
+            if FileManager.default.fileExists(atPath: jsonFileURL(root: jsonRoot, location: location).path) {
+                return
+            }
+            try await Task.sleep(nanoseconds: 5_000_000)
+        }
+        throw PersistOutTimeout(key: location.file)
+    }
+
+    /// Callers assert removal with `additionalEnvironment()` after this returns.
+    func waitForJSONRemoval(location: JSONFileLocation) async throws {
+        let deadline = Date().addingTimeInterval(1)
+        while Date() < deadline {
+            if !FileManager.default.fileExists(atPath: jsonFileURL(root: jsonRoot, location: location).path) {
+                return
+            }
+            try await Task.sleep(nanoseconds: 5_000_000)
+        }
+        throw PersistOutTimeout(key: location.file)
+    }
+
+    /// PersistJSONFile only encodes Codable. Corrupt-load tests need raw bytes.
+    func plantJSON(_ data: Data, location: JSONFileLocation) throws {
+        try writeJSONFileData(root: jsonRoot, location: location, data: data)
+    }
+
+    func jsonFileData(location: JSONFileLocation) -> Data? {
+        try? copyJSONFileData(root: jsonRoot, location: location)
+    }
+
     private var isolatedKeychainIdentity: KeychainIdentity {
         KeychainIdentity(
             service: keychainService,
@@ -125,8 +183,10 @@ public final class IsolatedPersistence {
     deinit {
         let name = suiteName
         let service = keychainService
+        let root = jsonRoot
         UserDefaults(suiteName: name)?.removePersistentDomain(forName: name)
         deleteKeychainItems(service: service)
+        deleteJSONFileTree(root: root)
     }
 
     #if DEBUG
@@ -157,19 +217,22 @@ final class PersistenceOverlayBox {
     weak var handle: IsolatedPersistence?
     let defaults: UserDefaults
     let keychainService: String
+    let jsonRoot: URL
 
     init(
         environmentID: ObjectIdentifier,
         environment: SharedEnvironment,
         handle: IsolatedPersistence,
         defaults: UserDefaults,
-        keychainService: String
+        keychainService: String,
+        jsonRoot: URL
     ) {
         self.environmentID = environmentID
         self.environment = environment
         self.handle = handle
         self.defaults = defaults
         self.keychainService = keychainService
+        self.jsonRoot = jsonRoot
     }
 }
 
@@ -182,7 +245,8 @@ enum PersistenceOverlay {
         environment: SharedEnvironment,
         handle: IsolatedPersistence,
         defaults: UserDefaults,
-        keychainService: String
+        keychainService: String,
+        jsonRoot: URL
     ) {
         prune()
         boxes.append(
@@ -191,7 +255,8 @@ enum PersistenceOverlay {
                 environment: environment,
                 handle: handle,
                 defaults: defaults,
-                keychainService: keychainService
+                keychainService: keychainService,
+                jsonRoot: jsonRoot
             )
         )
     }
@@ -203,7 +268,7 @@ enum PersistenceOverlay {
         prune()
         if let box = boxes.first(where: { $0.environmentID == environmentID }) {
             guard box.handle != nil else {
-                leftoverProvideTrap()
+                leftoverOnReadTrap()
             }
             return box.defaults
         }
@@ -217,7 +282,7 @@ enum PersistenceOverlay {
         prune()
         if let box = boxes.first(where: { $0.environmentID == environmentID }) {
             guard box.handle != nil else {
-                leftoverProvideTrap()
+                leftoverOnReadTrap()
             }
             return KeychainIdentity(
                 service: box.keychainService,
@@ -234,9 +299,23 @@ enum PersistenceOverlay {
         )
     }
 
-    private static func leftoverProvideTrap() -> Never {
+    static func jsonRoot(
+        policy: JSONFilePolicy,
+        environmentID: ObjectIdentifier
+    ) -> URL {
+        prune()
+        if let box = boxes.first(where: { $0.environmentID == environmentID }) {
+            guard box.handle != nil else {
+                leftoverOnReadTrap()
+            }
+            return box.jsonRoot
+        }
+        return policy.root
+    }
+
+    private static func leftoverOnReadTrap() -> Never {
         preconditionFailure(
-            "IsolatedPersistence is gone; leftover provide cannot use production Persistence identity"
+            "IsolatedPersistence is gone; leftover onRead cannot use production Persistence identity"
         )
     }
 

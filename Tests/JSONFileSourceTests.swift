@@ -19,17 +19,17 @@ import StateManagement
 
 @Suite(.serialized)
 @MainActor
-struct KeychainStrategyTests {
+struct JSONFileStrategyTests {
 
     @Test("Preheat loads with no prior read")
     func preheatLoadsWithNoPriorRead() throws {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\SessionSecrets.token)
+        iso.environment.preheat(\DraftNotes.body)
 
-        #expect(iso.environment.read(\SessionSecrets.token) == "")
-        guard case .settled = iso.environment.read(\SessionSecrets.$token.status) else {
+        #expect(iso.environment.read(\DraftNotes.body) == "")
+        guard case .settled = iso.environment.read(\DraftNotes.$body.status) else {
             Issue.record("expected settled")
             return
         }
@@ -40,22 +40,20 @@ struct KeychainStrategyTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.perform(SetToken(value: "secret"))
-        let account = "smkc.\(String(describing: \SessionSecrets.token))"
-        try await iso.waitForKeychainPersistOut(account: account)
+        iso.environment.perform(SetBody(value: "hello"))
+        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.body))
 
-        #expect(iso.additionalEnvironment().read(\SessionSecrets.token) == "secret")
+        #expect(iso.additionalEnvironment().read(\DraftNotes.body) == "hello")
     }
 
-    @Test("Missing onRead does not create a Keychain item")
+    @Test("Missing onRead does not create a JSON file")
     func missingOnReadDoesNotWrite() async throws {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\SessionSecrets.token) == "")
-        let account = "smkc.\(String(describing: \SessionSecrets.token))"
+        #expect(iso.environment.read(\DraftNotes.body) == "")
         await #expect(throws: PersistOutTimeout.self) {
-            try await iso.waitForKeychainPersistOut(account: account)
+            try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.body))
         }
     }
 }

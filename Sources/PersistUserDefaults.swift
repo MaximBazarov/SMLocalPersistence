@@ -22,6 +22,10 @@ struct PersistUserDefaults<Value>: ThrowingSyncOperation {
     let value: Value
 
     func perform(in env: SyncOperationEnvironment) throws(EncodingError) {
+        if isNilOptional(value) {
+            defaults.removeObject(forKey: key)
+            return
+        }
         defaults.set(try encodeUserDefaultsValue(value), forKey: key)
     }
 }
