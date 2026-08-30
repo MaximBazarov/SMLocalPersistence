@@ -34,7 +34,7 @@ final class iCloudSecrets: StateContainer {
 struct SetiCloudToken: SyncOperation {
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \iCloudSecrets.token)
+        env.write(\iCloudSecrets.token, value: value)
     }
 }
 

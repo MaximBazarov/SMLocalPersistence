@@ -25,7 +25,7 @@ struct SetFlag: SyncOperation {
     let key: String
     let value: Bool
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \FlagPrefs.flags, key: key)
+        env.write(\FlagPrefs.flags, key: key, value: value)
     }
 }
 

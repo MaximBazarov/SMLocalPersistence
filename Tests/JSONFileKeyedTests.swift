@@ -25,7 +25,7 @@ struct SetBagNote: SyncOperation {
     let key: String
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \NoteBag.notes, key: key)
+        env.write(\NoteBag.notes, key: key, value: value)
     }
 }
 
