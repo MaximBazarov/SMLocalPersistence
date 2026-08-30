@@ -89,7 +89,7 @@ public final class KeychainStrategy: AsyncStrategy {
         do {
             try env.perform(PersistKeychain(identity: identity, account: account, value: value))
         } catch {
-            // Persist-out does not fail Source status (ADR 0020).
+            // Persist-out does not fail Source status.
             keychainStrategyLog.error("Persist-out failed: \(error.localizedDescription)")
         }
     }

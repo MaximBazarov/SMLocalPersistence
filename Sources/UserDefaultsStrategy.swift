@@ -81,7 +81,7 @@ public final class UserDefaultsStrategy: AsyncStrategy {
         do {
             try env.perform(PersistUserDefaults(defaults: defaults, key: key, value: value))
         } catch {
-            // Persist-out does not fail Source status (ADR 0020).
+            // Persist-out does not fail Source status.
             userDefaultsLog.error("Persist-out failed: \(error.localizedDescription)")
         }
     }
