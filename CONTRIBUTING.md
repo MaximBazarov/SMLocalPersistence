@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping. SMLocalPersistence is persistence for StateManagement. Read StateManagement's PHILOSOPHY.md first. Every change is judged against its pillars.
+Thank you for helping. SMLocalPersistence is persistence for [StateManagement](https://github.com/MaximBazarov/StateManagement). Read that package's [PHILOSOPHY.md](https://github.com/MaximBazarov/StateManagement/blob/main/PHILOSOPHY.md) first. Every change is judged against its pillars.
 
 The library is pre-1.0. The public API is still in discussion and can change between versions. Expect that.
 
