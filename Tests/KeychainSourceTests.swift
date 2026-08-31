@@ -28,8 +28,8 @@ struct KeychainStrategyTests {
 
         iso.environment.preheat(\SessionSecrets.token)
 
-        #expect(iso.environment.read(\SessionSecrets.token) == "")
-        guard case .settled = iso.environment.read(\SessionSecrets.$token.status) else {
+        #expect(iso.environment.snapshot(\SessionSecrets.token) == "")
+        guard case .settled = iso.environment.snapshot(\SessionSecrets.$token.status) else {
             Issue.record("expected settled")
             return
         }
@@ -44,7 +44,7 @@ struct KeychainStrategyTests {
         let account = "smkc.\(String(describing: \SessionSecrets.$token))"
         try await iso.waitForKeychainPersistOut(account: account)
 
-        #expect(iso.additionalEnvironment().read(\SessionSecrets.token) == "secret")
+        #expect(iso.additionalEnvironment().snapshot(\SessionSecrets.token) == "secret")
     }
 
     @Test("Missing onRead does not create a Keychain item")
@@ -52,7 +52,7 @@ struct KeychainStrategyTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\SessionSecrets.token) == "")
+        #expect(iso.environment.snapshot(\SessionSecrets.token) == "")
         let account = "smkc.\(String(describing: \SessionSecrets.$token))"
         await #expect(throws: PersistOutTimeout.self) {
             try await iso.waitForKeychainPersistOut(account: account)

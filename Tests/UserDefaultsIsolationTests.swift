@@ -28,14 +28,14 @@ struct UserDefaultsIsolationTests {
         let isoB = IsolatedPersistence()
         defer { isoB.clear() }
 
-        #expect(isoA.environment.read(\ThemePrefs.theme) == "system")
+        #expect(isoA.environment.snapshot(\ThemePrefs.theme) == "system")
         isoA.environment.perform(SetTheme(value: "dark"))
         try await isoA.waitForPersistOut(
             key: "smud.\(String(describing: \ThemePrefs.$theme))"
         )
 
-        #expect(isoB.environment.read(\ThemePrefs.theme) == "system")
-        guard case .settled = isoB.environment.read(\ThemePrefs.$theme.status) else {
+        #expect(isoB.environment.snapshot(\ThemePrefs.theme) == "system")
+        guard case .settled = isoB.environment.snapshot(\ThemePrefs.$theme.status) else {
             Issue.record("expected settled")
             return
         }

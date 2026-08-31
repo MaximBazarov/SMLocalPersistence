@@ -37,14 +37,14 @@ final class OptionalNotes: StateContainer {
 struct SetBody: SyncOperation {
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \DraftNotes.body)
+        env.write(\DraftNotes.body, value: value)
     }
 }
 
 struct SetSubtitle: SyncOperation {
     let value: String?
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \OptionalNotes.subtitle)
+        env.write(\OptionalNotes.subtitle, value: value)
     }
 }
 
@@ -57,8 +57,8 @@ struct JSONFileLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\DraftNotes.body) == "")
-        guard case .settled = iso.environment.read(\DraftNotes.$body.status) else {
+        #expect(iso.environment.snapshot(\DraftNotes.body) == "")
+        guard case .settled = iso.environment.snapshot(\DraftNotes.$body.status) else {
             Issue.record("expected settled")
             return
         }
@@ -69,8 +69,8 @@ struct JSONFileLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\OptionalNotes.subtitle) == nil)
-        guard case .settled = iso.environment.read(\OptionalNotes.$subtitle.status) else {
+        #expect(iso.environment.snapshot(\OptionalNotes.subtitle) == nil)
+        guard case .settled = iso.environment.snapshot(\OptionalNotes.$subtitle.status) else {
             Issue.record("expected settled")
             return
         }
@@ -84,8 +84,8 @@ struct JSONFileLoadTests {
         let location = jsonFileLocation(\DraftNotes.$body)
         try iso.plantJSON(Data([0x00, 0x01, 0x02]), location: location)
 
-        #expect(iso.environment.read(\DraftNotes.body) == "")
-        guard case .error(let failure) = iso.environment.read(\DraftNotes.$body.status) else {
+        #expect(iso.environment.snapshot(\DraftNotes.body) == "")
+        guard case .error(let failure) = iso.environment.snapshot(\DraftNotes.$body.status) else {
             Issue.record("expected error")
             return
         }
@@ -100,14 +100,14 @@ struct JSONFileLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\DraftNotes.body) == "")
+        #expect(iso.environment.snapshot(\DraftNotes.body) == "")
         iso.environment.perform(SetBody(value: "hello"))
 
         try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
         let env2 = iso.additionalEnvironment()
-        #expect(env2.read(\DraftNotes.body) == "hello")
-        guard case .settled = env2.read(\DraftNotes.$body.status) else {
+        #expect(env2.snapshot(\DraftNotes.body) == "hello")
+        guard case .settled = env2.snapshot(\DraftNotes.$body.status) else {
             Issue.record("expected settled")
             return
         }
@@ -127,8 +127,8 @@ struct JSONFileLoadTests {
         try await iso.waitForJSONRemoval(location: location)
 
         let env2 = iso.additionalEnvironment()
-        #expect(env2.read(\OptionalNotes.subtitle) == nil)
-        guard case .settled = env2.read(\OptionalNotes.$subtitle.status) else {
+        #expect(env2.snapshot(\OptionalNotes.subtitle) == nil)
+        guard case .settled = env2.snapshot(\OptionalNotes.$subtitle.status) else {
             Issue.record("expected settled")
             return
         }

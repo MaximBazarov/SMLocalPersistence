@@ -40,7 +40,7 @@ struct IsolatedPersistenceViewTests {
         iso.environment.perform(SetTheme(value: "dark"))
         try await iso.waitForPersistOut(key: key)
 
-        #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "dark")
+        #expect(iso.additionalEnvironment().snapshot(\ThemePrefs.theme) == "dark")
         #expect(UserDefaults.standard.data(forKey: key) == before)
     }
 
@@ -71,7 +71,7 @@ struct IsolatedPersistenceViewTests {
 
         iso.environment.preheat(\ThemePrefs.theme)
         try await iso.waitForPersistOut(key: key)
-        #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "dark")
+        #expect(iso.additionalEnvironment().snapshot(\ThemePrefs.theme) == "dark")
         #expect(UserDefaults.standard.data(forKey: key) == before)
     }
 

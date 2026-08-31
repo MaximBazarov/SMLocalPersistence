@@ -25,7 +25,7 @@ struct SetBagNote: SyncOperation {
     let key: String
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \NoteBag.notes, key: key)
+        env.write(\NoteBag.notes, key: key, value: value)
     }
 }
 
@@ -38,8 +38,8 @@ struct JSONFileKeyedTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\NoteBag.notes, key: "missing") == nil)
-        guard case .settled = iso.environment.read(\NoteBag.$notes.status, key: "missing") else {
+        #expect(iso.environment.snapshot(\NoteBag.notes, key: "missing") == nil)
+        guard case .settled = iso.environment.snapshot(\NoteBag.$notes.status, key: "missing") else {
             Issue.record("expected settled")
             return
         }
@@ -56,8 +56,8 @@ struct JSONFileKeyedTests {
         try await iso.waitForJSONPersistOut(location: jsonFileLocation(\NoteBag.$notes, key: "a"))
 
         let env2 = iso.additionalEnvironment()
-        #expect(env2.read(\NoteBag.notes, key: "a") == "one")
-        guard case .settled = env2.read(\NoteBag.$notes.status, key: "a") else {
+        #expect(env2.snapshot(\NoteBag.notes, key: "a") == "one")
+        guard case .settled = env2.snapshot(\NoteBag.$notes.status, key: "a") else {
             Issue.record("expected settled")
             return
         }
@@ -77,8 +77,8 @@ struct JSONFileKeyedTests {
         try await iso.waitForJSONPersistOut(location: jsonFileLocation(\NoteBag.$notes, key: "b"))
 
         let env2 = iso.additionalEnvironment()
-        #expect(env2.read(\NoteBag.notes, key: "a") == "one")
-        #expect(env2.read(\NoteBag.notes, key: "b") == "two")
+        #expect(env2.snapshot(\NoteBag.notes, key: "a") == "one")
+        #expect(env2.snapshot(\NoteBag.notes, key: "b") == "two")
         #expect(
             jsonFileLocation(\NoteBag.$notes, key: "a")
                 != jsonFileLocation(\NoteBag.$notes, key: "b")

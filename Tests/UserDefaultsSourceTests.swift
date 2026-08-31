@@ -28,8 +28,8 @@ struct UserDefaultsStrategyTests {
 
         iso.environment.preheat(\ThemePrefs.theme)
 
-        #expect(iso.environment.read(\ThemePrefs.theme) == "system")
-        guard case .settled = iso.environment.read(\ThemePrefs.$theme.status) else {
+        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "system")
+        guard case .settled = iso.environment.snapshot(\ThemePrefs.$theme.status) else {
             Issue.record("expected settled")
             return
         }
@@ -40,7 +40,7 @@ struct UserDefaultsStrategyTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\ThemePrefs.theme) == "system")
+        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "system")
         let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         await #expect(throws: PersistOutTimeout.self) {
             try await iso.waitForPersistOut(key: key)
@@ -56,6 +56,6 @@ struct UserDefaultsStrategyTests {
         let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         try await iso.waitForPersistOut(key: key)
 
-        #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "dark")
+        #expect(iso.additionalEnvironment().snapshot(\ThemePrefs.theme) == "dark")
     }
 }

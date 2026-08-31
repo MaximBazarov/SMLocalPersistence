@@ -28,7 +28,7 @@ final class OptionalPrefs: StateContainer {
 struct SetNickname: SyncOperation {
     let value: String?
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \OptionalPrefs.nickname)
+        env.write(\OptionalPrefs.nickname, value: value)
     }
 }
 
@@ -41,8 +41,8 @@ struct UserDefaultsLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\ThemePrefs.theme) == "system")
-        guard case .settled = iso.environment.read(\ThemePrefs.$theme.status) else {
+        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "system")
+        guard case .settled = iso.environment.snapshot(\ThemePrefs.$theme.status) else {
             Issue.record("expected settled")
             return
         }
@@ -53,8 +53,8 @@ struct UserDefaultsLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\OptionalPrefs.nickname) == nil)
-        guard case .settled = iso.environment.read(\OptionalPrefs.$nickname.status) else {
+        #expect(iso.environment.snapshot(\OptionalPrefs.nickname) == nil)
+        guard case .settled = iso.environment.snapshot(\OptionalPrefs.$nickname.status) else {
             Issue.record("expected settled")
             return
         }
@@ -68,8 +68,8 @@ struct UserDefaultsLoadTests {
         let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         iso.plant(Data([0x00, 0x01, 0x02]), forKey: key)
 
-        #expect(iso.environment.read(\ThemePrefs.theme) == "system")
-        guard case .error = iso.environment.read(\ThemePrefs.$theme.status) else {
+        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "system")
+        guard case .error = iso.environment.snapshot(\ThemePrefs.$theme.status) else {
             Issue.record("expected error")
             return
         }
@@ -80,15 +80,15 @@ struct UserDefaultsLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\ThemePrefs.theme) == "system")
+        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "system")
         iso.environment.perform(SetTheme(value: "dark"))
 
         let key = "smud.\(String(describing: \ThemePrefs.$theme))"
         try await iso.waitForPersistOut(key: key)
 
         let env2 = iso.additionalEnvironment()
-        #expect(env2.read(\ThemePrefs.theme) == "dark")
-        guard case .settled = env2.read(\ThemePrefs.$theme.status) else {
+        #expect(env2.snapshot(\ThemePrefs.theme) == "dark")
+        guard case .settled = env2.snapshot(\ThemePrefs.$theme.status) else {
             Issue.record("expected settled")
             return
         }
@@ -108,8 +108,8 @@ struct UserDefaultsLoadTests {
         try await iso.waitForRemoval(key: key)
 
         let env2 = iso.additionalEnvironment()
-        #expect(env2.read(\OptionalPrefs.nickname) == nil)
-        guard case .settled = env2.read(\OptionalPrefs.$nickname.status) else {
+        #expect(env2.snapshot(\OptionalPrefs.nickname) == nil)
+        guard case .settled = env2.snapshot(\OptionalPrefs.$nickname.status) else {
             Issue.record("expected settled")
             return
         }

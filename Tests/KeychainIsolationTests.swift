@@ -34,7 +34,7 @@ final class iCloudSecrets: StateContainer {
 struct SetiCloudToken: SyncOperation {
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \iCloudSecrets.token)
+        env.write(\iCloudSecrets.token, value: value)
     }
 }
 
@@ -47,15 +47,15 @@ struct KeychainIsolationTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\SessionSecrets.token) == "")
+        #expect(iso.environment.snapshot(\SessionSecrets.token) == "")
         iso.environment.perform(SetToken(value: "secret"))
         let account = "smkc.\(String(describing: \SessionSecrets.$token))"
         try await iso.waitForKeychainPersistOut(account: account)
 
-        #expect(iso.additionalEnvironment().read(\SessionSecrets.token) == "secret")
+        #expect(iso.additionalEnvironment().snapshot(\SessionSecrets.token) == "secret")
 
         let production = SharedEnvironment()
-        #expect(production.read(\SessionSecrets.token) == "")
+        #expect(production.snapshot(\SessionSecrets.token) == "")
     }
 
     @Test("Different IsolatedPersistence instances do not share Values")
@@ -65,14 +65,14 @@ struct KeychainIsolationTests {
         let isoB = IsolatedPersistence()
         defer { isoB.clear() }
 
-        #expect(isoA.environment.read(\SessionSecrets.token) == "")
+        #expect(isoA.environment.snapshot(\SessionSecrets.token) == "")
         isoA.environment.perform(SetToken(value: "secret"))
         try await isoA.waitForKeychainPersistOut(
             account: "smkc.\(String(describing: \SessionSecrets.$token))"
         )
 
-        #expect(isoB.environment.read(\SessionSecrets.token) == "")
-        guard case .settled = isoB.environment.read(\SessionSecrets.$token.status) else {
+        #expect(isoB.environment.snapshot(\SessionSecrets.token) == "")
+        guard case .settled = isoB.environment.snapshot(\SessionSecrets.$token.status) else {
             Issue.record("expected settled")
             return
         }
@@ -89,14 +89,14 @@ struct KeychainIsolationTests {
         try await iso.waitForKeychainPersistOut(account: account)
 
         let env2 = iso.additionalEnvironment()
-        #expect(env2.read(\iCloudSecrets.token) == "secret")
-        guard case .settled = env2.read(\iCloudSecrets.$token.status) else {
+        #expect(env2.snapshot(\iCloudSecrets.token) == "secret")
+        guard case .settled = env2.snapshot(\iCloudSecrets.$token.status) else {
             Issue.record("expected settled")
             return
         }
 
         let production = SharedEnvironment()
-        #expect(production.read(\iCloudSecrets.token) == "")
+        #expect(production.snapshot(\iCloudSecrets.token) == "")
     }
 
     @Test("clear deletes IsolatedPersistence Keychain items")
@@ -105,12 +105,12 @@ struct KeychainIsolationTests {
         defer { iso.clear() }
         let account = "smkc.\(String(describing: \SessionSecrets.$token))"
 
-        #expect(iso.environment.read(\SessionSecrets.token) == "")
+        #expect(iso.environment.snapshot(\SessionSecrets.token) == "")
         iso.environment.perform(SetToken(value: "secret"))
         try await iso.waitForKeychainPersistOut(account: account)
 
         iso.clear()
-        #expect(iso.additionalEnvironment().read(\SessionSecrets.token) == "")
+        #expect(iso.additionalEnvironment().snapshot(\SessionSecrets.token) == "")
     }
 
     #if DEBUG
@@ -126,7 +126,7 @@ struct KeychainIsolationTests {
         iso.environment.preheat(\SessionSecrets.token)
         try await iso.waitForKeychainPersistOut(account: account)
 
-        #expect(iso.additionalEnvironment().read(\SessionSecrets.token) == "secret")
+        #expect(iso.additionalEnvironment().snapshot(\SessionSecrets.token) == "secret")
     }
     #endif
 

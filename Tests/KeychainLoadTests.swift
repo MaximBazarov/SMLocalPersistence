@@ -38,14 +38,14 @@ final class OptionalSecrets: StateContainer {
 struct SetToken: SyncOperation {
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \SessionSecrets.token)
+        env.write(\SessionSecrets.token, value: value)
     }
 }
 
 struct SetPin: SyncOperation {
     let value: String?
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \OptionalSecrets.pin)
+        env.write(\OptionalSecrets.pin, value: value)
     }
 }
 
@@ -58,8 +58,8 @@ struct KeychainLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\SessionSecrets.token) == "")
-        guard case .settled = iso.environment.read(\SessionSecrets.$token.status) else {
+        #expect(iso.environment.snapshot(\SessionSecrets.token) == "")
+        guard case .settled = iso.environment.snapshot(\SessionSecrets.$token.status) else {
             Issue.record("expected settled")
             return
         }
@@ -70,8 +70,8 @@ struct KeychainLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\OptionalSecrets.pin) == nil)
-        guard case .settled = iso.environment.read(\OptionalSecrets.$pin.status) else {
+        #expect(iso.environment.snapshot(\OptionalSecrets.pin) == nil)
+        guard case .settled = iso.environment.snapshot(\OptionalSecrets.$pin.status) else {
             Issue.record("expected settled")
             return
         }
@@ -85,8 +85,8 @@ struct KeychainLoadTests {
         let account = "smkc.\(String(describing: \SessionSecrets.$token))"
         try iso.plantKeychain(Data([0x00, 0x01, 0x02]), account: account)
 
-        #expect(iso.environment.read(\SessionSecrets.token) == "")
-        guard case .error(let failure) = iso.environment.read(\SessionSecrets.$token.status) else {
+        #expect(iso.environment.snapshot(\SessionSecrets.token) == "")
+        guard case .error(let failure) = iso.environment.snapshot(\SessionSecrets.$token.status) else {
             Issue.record("expected error")
             return
         }
@@ -101,15 +101,15 @@ struct KeychainLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\SessionSecrets.token) == "")
+        #expect(iso.environment.snapshot(\SessionSecrets.token) == "")
         iso.environment.perform(SetToken(value: "secret"))
 
         let account = "smkc.\(String(describing: \SessionSecrets.$token))"
         try await iso.waitForKeychainPersistOut(account: account)
 
         let env2 = iso.additionalEnvironment()
-        #expect(env2.read(\SessionSecrets.token) == "secret")
-        guard case .settled = env2.read(\SessionSecrets.$token.status) else {
+        #expect(env2.snapshot(\SessionSecrets.token) == "secret")
+        guard case .settled = env2.snapshot(\SessionSecrets.$token.status) else {
             Issue.record("expected settled")
             return
         }
@@ -129,8 +129,8 @@ struct KeychainLoadTests {
         try await iso.waitForKeychainRemoval(account: account)
 
         let env2 = iso.additionalEnvironment()
-        #expect(env2.read(\OptionalSecrets.pin) == nil)
-        guard case .settled = env2.read(\OptionalSecrets.$pin.status) else {
+        #expect(env2.snapshot(\OptionalSecrets.pin) == nil)
+        guard case .settled = env2.snapshot(\OptionalSecrets.$pin.status) else {
             Issue.record("expected settled")
             return
         }

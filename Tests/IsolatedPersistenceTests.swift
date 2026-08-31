@@ -28,13 +28,13 @@ struct IsolatedPersistenceTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\ThemePrefs.theme) == "system")
+        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "system")
         iso.environment.perform(SetTheme(value: "dark"))
         try await iso.waitForPersistOut(key: key)
 
-        #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "dark")
+        #expect(iso.additionalEnvironment().snapshot(\ThemePrefs.theme) == "dark")
         #expect(UserDefaults.standard.data(forKey: key) == before)
-        #expect(iso.environment.read(\ThemePrefs.theme) == "dark")
+        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "dark")
     }
 
     @Test("additionalEnvironment reads persisted Values after notify")
@@ -48,8 +48,8 @@ struct IsolatedPersistenceTests {
         try await iso.waitForPersistOut(key: key)
 
         let env2 = iso.additionalEnvironment()
-        #expect(env2.read(\ThemePrefs.theme) == "dark")
-        guard case .settled = env2.read(\ThemePrefs.$theme.status) else {
+        #expect(env2.snapshot(\ThemePrefs.theme) == "dark")
+        guard case .settled = env2.snapshot(\ThemePrefs.$theme.status) else {
             Issue.record("expected settled")
             return
         }
@@ -61,12 +61,12 @@ struct IsolatedPersistenceTests {
         defer { iso.clear() }
         let key = "smud.\(String(describing: \ThemePrefs.$theme))"
 
-        #expect(iso.environment.read(\ThemePrefs.theme) == "system")
+        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "system")
         iso.environment.perform(SetTheme(value: "dark"))
         try await iso.waitForPersistOut(key: key)
 
         iso.clear()
-        #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "system")
+        #expect(iso.additionalEnvironment().snapshot(\ThemePrefs.theme) == "system")
     }
 
     @Test("SharedEnvironment() stays production")
@@ -80,7 +80,7 @@ struct IsolatedPersistenceTests {
         try await iso.waitForPersistOut(key: key)
 
         let production = SharedEnvironment()
-        #expect(production.read(\ThemePrefs.theme) == "system")
+        #expect(production.snapshot(\ThemePrefs.theme) == "system")
     }
 
     #if DEBUG
@@ -96,7 +96,7 @@ struct IsolatedPersistenceTests {
         iso.environment.preheat(\ThemePrefs.theme)
         try await iso.waitForPersistOut(key: key)
 
-        #expect(iso.additionalEnvironment().read(\ThemePrefs.theme) == "dark")
+        #expect(iso.additionalEnvironment().snapshot(\ThemePrefs.theme) == "dark")
     }
     #endif
 
@@ -111,7 +111,7 @@ struct IsolatedPersistenceTests {
         try await iso.waitForPersistOut(key: key)
 
         iso.environment.perform(ResetAll())
-        #expect(iso.environment.read(\ThemePrefs.theme) == "dark")
+        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "dark")
     }
 
     @Test("IsolatedPersistence overlays a named-suite Policy")
@@ -129,7 +129,7 @@ struct IsolatedPersistenceTests {
         try await iso.waitForPersistOut(key: key)
 
         #expect(named.data(forKey: key) == nil)
-        #expect(iso.additionalEnvironment().read(\NamedSuitePrefs.theme) == "dark")
+        #expect(iso.additionalEnvironment().snapshot(\NamedSuitePrefs.theme) == "dark")
     }
 
     @Test("Production named-suite Policy writes that suite")
@@ -140,13 +140,13 @@ struct IsolatedPersistenceTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let env = SharedEnvironment()
-        #expect(env.read(\NamedSuitePrefs.theme) == "system")
+        #expect(env.snapshot(\NamedSuitePrefs.theme) == "system")
         env.perform(SetNamedSuiteTheme(value: "dark"))
         let key = "smud.\(String(describing: \NamedSuitePrefs.$theme))"
         try await waitForUserDefaultsData(defaults, key: key)
 
         let env2 = SharedEnvironment()
-        #expect(env2.read(\NamedSuitePrefs.theme) == "dark")
+        #expect(env2.snapshot(\NamedSuitePrefs.theme) == "dark")
     }
 
     #if os(macOS)
@@ -159,7 +159,7 @@ struct IsolatedPersistenceTests {
                     let iso = IsolatedPersistence()
                     env = iso.environment
                 }
-                _ = env.read(\ThemePrefs.theme)
+                _ = env.snapshot(\ThemePrefs.theme)
             }
         }
     }
@@ -181,6 +181,6 @@ final class NamedSuitePrefs: StateContainer {
 struct SetNamedSuiteTheme: SyncOperation {
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \NamedSuitePrefs.theme)
+        env.write(\NamedSuitePrefs.theme, value: value)
     }
 }

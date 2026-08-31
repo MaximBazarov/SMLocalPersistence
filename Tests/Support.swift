@@ -15,11 +15,37 @@
 import Foundation
 import Testing
 import StateManagement
+import StateManagementTestingSupport
 
 struct SetTheme: SyncOperation {
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \ThemePrefs.theme)
+        env.write(\ThemePrefs.theme, value: value)
+    }
+}
+
+@MainActor
+extension SharedEnvironment {
+
+    /// Snapshots a Value for an assertion, through `StateReader`.
+    ///
+    /// A read is public only where the caller is known, so `SharedEnvironment` has none and a
+    /// Satellite does not reach the core with `@testable`. `StateReader` is the sanctioned reader
+    /// because it is an `EnvironmentService`, and therefore a Restricted Environment.
+    ///
+    /// Deliberately not named `read`: that would shadow the core's internal one and read like
+    /// public API. A fresh reader per call keeps the subscription from outliving the assertion —
+    /// the receiver holds the reader weakly, so it goes quiet as soon as this returns.
+    func snapshot<S: StateContainer, V>(_ keyPath: KeyPath<S, V>) -> V {
+        StateReader(env: self).read(keyPath)
+    }
+
+    /// Snapshots one key of a Keyed value. Same reasoning as ``snapshot(_:)``.
+    func snapshot<S: StateContainer, K: Hashable, V>(
+        _ keyPath: KeyPath<S, [K: V]>,
+        key: K
+    ) -> V? {
+        StateReader(env: self).read(keyPath, key: key)
     }
 }
 

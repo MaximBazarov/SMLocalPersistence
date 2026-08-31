@@ -28,8 +28,8 @@ struct JSONFileStrategyTests {
 
         iso.environment.preheat(\DraftNotes.body)
 
-        #expect(iso.environment.read(\DraftNotes.body) == "")
-        guard case .settled = iso.environment.read(\DraftNotes.$body.status) else {
+        #expect(iso.environment.snapshot(\DraftNotes.body) == "")
+        guard case .settled = iso.environment.snapshot(\DraftNotes.$body.status) else {
             Issue.record("expected settled")
             return
         }
@@ -43,7 +43,7 @@ struct JSONFileStrategyTests {
         iso.environment.perform(SetBody(value: "hello"))
         try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
-        #expect(iso.additionalEnvironment().read(\DraftNotes.body) == "hello")
+        #expect(iso.additionalEnvironment().snapshot(\DraftNotes.body) == "hello")
     }
 
     @Test("Missing onRead does not create a JSON file")
@@ -51,7 +51,7 @@ struct JSONFileStrategyTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\DraftNotes.body) == "")
+        #expect(iso.environment.snapshot(\DraftNotes.body) == "")
         await #expect(throws: PersistOutTimeout.self) {
             try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
         }

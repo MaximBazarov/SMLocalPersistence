@@ -25,7 +25,7 @@ struct SetBagToken: SyncOperation {
     let key: String
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \TokenBag.tokens, key: key)
+        env.write(\TokenBag.tokens, key: key, value: value)
     }
 }
 
@@ -45,8 +45,8 @@ struct KeychainKeyedTests {
         try await iso.waitForKeychainPersistOut(account: account)
 
         let env2 = iso.additionalEnvironment()
-        #expect(env2.read(\TokenBag.tokens, key: "a") == "one")
-        guard case .settled = env2.read(\TokenBag.$tokens.status, key: "a") else {
+        #expect(env2.snapshot(\TokenBag.tokens, key: "a") == "one")
+        guard case .settled = env2.snapshot(\TokenBag.$tokens.status, key: "a") else {
             Issue.record("expected settled")
             return
         }

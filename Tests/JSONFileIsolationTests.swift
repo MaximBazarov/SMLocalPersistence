@@ -40,14 +40,14 @@ struct JSONFileIsolationTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\DraftNotes.body) == "")
+        #expect(iso.environment.snapshot(\DraftNotes.body) == "")
         iso.environment.perform(SetBody(value: "hello"))
         try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
-        #expect(iso.additionalEnvironment().read(\DraftNotes.body) == "hello")
+        #expect(iso.additionalEnvironment().snapshot(\DraftNotes.body) == "hello")
 
         let production = SharedEnvironment()
-        #expect(production.read(\DraftNotes.body) == "")
+        #expect(production.snapshot(\DraftNotes.body) == "")
         #expect(
             !FileManager.default.fileExists(
                 atPath: jsonFileURL(
@@ -65,12 +65,12 @@ struct JSONFileIsolationTests {
         let isoB = IsolatedPersistence()
         defer { isoB.clear() }
 
-        #expect(isoA.environment.read(\DraftNotes.body) == "")
+        #expect(isoA.environment.snapshot(\DraftNotes.body) == "")
         isoA.environment.perform(SetBody(value: "hello"))
         try await isoA.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
-        #expect(isoB.environment.read(\DraftNotes.body) == "")
-        guard case .settled = isoB.environment.read(\DraftNotes.$body.status) else {
+        #expect(isoB.environment.snapshot(\DraftNotes.body) == "")
+        guard case .settled = isoB.environment.snapshot(\DraftNotes.$body.status) else {
             Issue.record("expected settled")
             return
         }
@@ -89,14 +89,14 @@ struct JSONFileIsolationTests {
         try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
         let env2 = iso.additionalEnvironment()
-        #expect(env2.read(\DraftNotes.body) == "hello")
-        guard case .settled = env2.read(\DraftNotes.$body.status) else {
+        #expect(env2.snapshot(\DraftNotes.body) == "hello")
+        guard case .settled = env2.snapshot(\DraftNotes.$body.status) else {
             Issue.record("expected settled")
             return
         }
 
         let production = SharedEnvironment()
-        #expect(production.read(\DraftNotes.body) == "")
+        #expect(production.snapshot(\DraftNotes.body) == "")
     }
 
     @Test("clear deletes IsolatedPersistence JSON files")
@@ -104,12 +104,12 @@ struct JSONFileIsolationTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        #expect(iso.environment.read(\DraftNotes.body) == "")
+        #expect(iso.environment.snapshot(\DraftNotes.body) == "")
         iso.environment.perform(SetBody(value: "hello"))
         try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
         iso.clear()
-        #expect(iso.additionalEnvironment().read(\DraftNotes.body) == "")
+        #expect(iso.additionalEnvironment().snapshot(\DraftNotes.body) == "")
     }
 
     #if DEBUG
@@ -124,7 +124,7 @@ struct JSONFileIsolationTests {
         iso.environment.preheat(\DraftNotes.body)
         try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
-        #expect(iso.additionalEnvironment().read(\DraftNotes.body) == "hello")
+        #expect(iso.additionalEnvironment().snapshot(\DraftNotes.body) == "hello")
     }
     #endif
 

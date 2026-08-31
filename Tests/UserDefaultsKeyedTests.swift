@@ -25,7 +25,7 @@ struct SetFlag: SyncOperation {
     let key: String
     let value: Bool
     func perform(in env: SyncOperationEnvironment) {
-        env.write(value, keyPath: \FlagPrefs.flags, key: key)
+        env.write(\FlagPrefs.flags, key: key, value: value)
     }
 }
 
@@ -45,8 +45,8 @@ struct UserDefaultsKeyedTests {
         try await iso.waitForPersistOut(key: key)
 
         let env2 = iso.additionalEnvironment()
-        #expect(env2.read(\FlagPrefs.flags, key: "a") == true)
-        guard case .settled = env2.read(\FlagPrefs.$flags.status, key: "a") else {
+        #expect(env2.snapshot(\FlagPrefs.flags, key: "a") == true)
+        guard case .settled = env2.snapshot(\FlagPrefs.$flags.status, key: "a") else {
             Issue.record("expected settled")
             return
         }
