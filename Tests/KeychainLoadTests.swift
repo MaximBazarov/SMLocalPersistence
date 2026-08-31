@@ -38,14 +38,14 @@ final class OptionalSecrets: StateContainer {
 struct SetToken: SyncOperation {
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(\SessionSecrets.token, value: value)
+        env.write(value, keyPath: \SessionSecrets.token)
     }
 }
 
 struct SetPin: SyncOperation {
     let value: String?
     func perform(in env: SyncOperationEnvironment) {
-        env.write(\OptionalSecrets.pin, value: value)
+        env.write(value, keyPath: \OptionalSecrets.pin)
     }
 }
 

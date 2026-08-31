@@ -28,7 +28,7 @@ final class OptionalPrefs: StateContainer {
 struct SetNickname: SyncOperation {
     let value: String?
     func perform(in env: SyncOperationEnvironment) {
-        env.write(\OptionalPrefs.nickname, value: value)
+        env.write(value, keyPath: \OptionalPrefs.nickname)
     }
 }
 

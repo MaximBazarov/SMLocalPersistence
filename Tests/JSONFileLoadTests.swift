@@ -37,14 +37,14 @@ final class OptionalNotes: StateContainer {
 struct SetBody: SyncOperation {
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(\DraftNotes.body, value: value)
+        env.write(value, keyPath: \DraftNotes.body)
     }
 }
 
 struct SetSubtitle: SyncOperation {
     let value: String?
     func perform(in env: SyncOperationEnvironment) {
-        env.write(\OptionalNotes.subtitle, value: value)
+        env.write(value, keyPath: \OptionalNotes.subtitle)
     }
 }
 

@@ -25,7 +25,7 @@ struct SetBagToken: SyncOperation {
     let key: String
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(\TokenBag.tokens, key: key, value: value)
+        env.write(value, keyPath: \TokenBag.tokens, key: key)
     }
 }
 

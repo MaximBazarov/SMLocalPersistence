@@ -181,6 +181,6 @@ final class NamedSuitePrefs: StateContainer {
 struct SetNamedSuiteTheme: SyncOperation {
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(\NamedSuitePrefs.theme, value: value)
+        env.write(value, keyPath: \NamedSuitePrefs.theme)
     }
 }

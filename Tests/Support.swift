@@ -19,7 +19,7 @@ import StateManagement
 struct SetTheme: SyncOperation {
     let value: String
     func perform(in env: SyncOperationEnvironment) {
-        env.write(\ThemePrefs.theme, value: value)
+        env.write(value, keyPath: \ThemePrefs.theme)
     }
 }
 
