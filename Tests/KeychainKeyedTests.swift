@@ -38,7 +38,7 @@ struct KeychainKeyedTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\TokenBag.tokens, key: "a")
+        iso.environment.preheat(\TokenBag.$tokens, keys: ["a"])
         iso.environment.perform(SetBagToken(key: "a", value: "one"))
 
         let account = "smkc.\(String(describing: \TokenBag.$tokens))#a"

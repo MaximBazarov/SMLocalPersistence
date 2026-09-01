@@ -26,7 +26,7 @@ struct JSONFileStrategyTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\DraftNotes.body)
+        iso.environment.preheat(\DraftNotes.$body)
 
         #expect(iso.environment.snapshot(\DraftNotes.body) == "")
         guard case .settled = iso.environment.snapshot(\DraftNotes.$body.status) else {

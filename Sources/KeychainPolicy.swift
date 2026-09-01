@@ -53,15 +53,13 @@ extension AsyncState where S == KeychainStrategy {
     /// Pins `S` to ``KeychainStrategy``.
     @_disfavoredOverload
     public convenience init(wrappedValue: Value, _ policy: KeychainPolicy)
-        where Status == SourceStatus<KeychainStrategy.Failure> {
+        where Key == NoKey, Entry == Value {
         self.init(wrappedValue: wrappedValue, policy: policy)
     }
 
     /// Pins `S` to ``KeychainStrategy``.
-    public convenience init<Key: Hashable, Output>(
-        wrappedValue: [Key: Output],
-        _ policy: KeychainPolicy
-    ) where Value == [Key: Output], Status == [Key: SourceStatus<KeychainStrategy.Failure>] {
+    public convenience init(wrappedValue: [Key: Entry], _ policy: KeychainPolicy)
+        where Value == [Key: Entry] {
         self.init(wrappedValue: wrappedValue, policy: policy)
     }
 }

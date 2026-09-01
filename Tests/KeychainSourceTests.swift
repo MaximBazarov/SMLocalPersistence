@@ -26,7 +26,7 @@ struct KeychainStrategyTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\SessionSecrets.token)
+        iso.environment.preheat(\SessionSecrets.$token)
 
         #expect(iso.environment.snapshot(\SessionSecrets.token) == "")
         guard case .settled = iso.environment.snapshot(\SessionSecrets.$token.status) else {

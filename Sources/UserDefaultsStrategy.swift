@@ -30,50 +30,50 @@ public final class UserDefaultsStrategy: AsyncStrategy {
         self.env = env
     }
 
-    public func onRead<Storage: StateContainer, Value, Status>(
-        _ keyPath: KeyPath<Storage, AsyncState<UserDefaultsStrategy, Value, Status>>,
+    public func onRead<Storage: StateContainer, Value>(
+        _ address: KeyPath<Storage, AsyncState<UserDefaultsStrategy, NoKey, Value, Value>>,
         policy: Policy,
         current: Value
     ) {
         let defaults = PersistenceOverlay.userDefaults(policy: policy, environmentID: env.environmentID)
-        let key = userDefaultsKey(keyPath)
+        let key = userDefaultsKey(address)
         if let data = defaults.data(forKey: key) {
-            applyEncoded(data, keyPath: keyPath)
+            applyEncoded(data, address: address)
         } else {
-            env.apply(current, keyPath: keyPath)
+            env.apply(address, value: current)
         }
     }
 
-    public func onRead<Storage: StateContainer, Key: Hashable, Value, Status>(
-        _ keyPath: KeyPath<Storage, AsyncState<UserDefaultsStrategy, [Key: Value], Status>>,
+    public func onRead<Storage: StateContainer, Key: Hashable, Value>(
+        _ address: KeyPath<Storage, AsyncState<UserDefaultsStrategy, Key, Value, [Key: Value]>>,
         key: Key,
         policy: Policy,
         current: Value?
     ) {
         let defaults = PersistenceOverlay.userDefaults(policy: policy, environmentID: env.environmentID)
-        let udKey = userDefaultsKey(keyPath, key: key)
+        let udKey = userDefaultsKey(address, key: key)
         if let data = defaults.data(forKey: udKey) {
-            applyEncoded(data, keyPath: keyPath, key: key)
+            applyEncoded(data, address: address, key: key)
         } else {
-            env.apply(current, keyPath: keyPath, key: key)
+            env.apply(address, key: key, value: current)
         }
     }
 
-    public func onWrite<Storage: StateContainer, Value, Status>(
-        _ value: Value,
-        _ keyPath: KeyPath<Storage, AsyncState<UserDefaultsStrategy, Value, Status>>,
-        policy: Policy
+    public func onWrite<Storage: StateContainer, Value>(
+        _ address: KeyPath<Storage, AsyncState<UserDefaultsStrategy, NoKey, Value, Value>>,
+        policy: Policy,
+        value: Value
     ) {
-        persist(value, key: userDefaultsKey(keyPath), policy: policy)
+        persist(value, key: userDefaultsKey(address), policy: policy)
     }
 
-    public func onWrite<Storage: StateContainer, Key: Hashable, Value, Status>(
-        _ value: Value,
-        _ keyPath: KeyPath<Storage, AsyncState<UserDefaultsStrategy, [Key: Value], Status>>,
+    public func onWrite<Storage: StateContainer, Key: Hashable, Value>(
+        _ address: KeyPath<Storage, AsyncState<UserDefaultsStrategy, Key, Value, [Key: Value]>>,
         key: Key,
-        policy: Policy
+        policy: Policy,
+        value: Value
     ) {
-        persist(value, key: userDefaultsKey(keyPath, key: key), policy: policy)
+        persist(value, key: userDefaultsKey(address, key: key), policy: policy)
     }
 
     private func persist<Value>(_ value: Value, key: String, policy: Policy) {
@@ -86,48 +86,48 @@ public final class UserDefaultsStrategy: AsyncStrategy {
         }
     }
 
-    private func applyEncoded<Storage: StateContainer, Value, Status>(
+    private func applyEncoded<Storage: StateContainer, Value>(
         _ data: Data,
-        keyPath: KeyPath<Storage, AsyncState<UserDefaultsStrategy, Value, Status>>
+        address: KeyPath<Storage, AsyncState<UserDefaultsStrategy, NoKey, Value, Value>>
     ) {
         do {
             let value: Value = try decodeUserDefaultsValue(Value.self, from: data)
-            env.apply(value, keyPath: keyPath)
+            env.apply(address, value: value)
         } catch let error as DecodingError {
-            env.fail(error, keyPath: keyPath)
+            env.fail(address, error: error)
         } catch {
             env.fail(
-                DecodingError.dataCorrupted(
+                address,
+                error: DecodingError.dataCorrupted(
                     DecodingError.Context(
                         codingPath: [],
                         debugDescription: String(describing: error)
                     )
-                ),
-                keyPath: keyPath
+                )
             )
         }
     }
 
-    private func applyEncoded<Storage: StateContainer, Key: Hashable, Value, Status>(
+    private func applyEncoded<Storage: StateContainer, Key: Hashable, Value>(
         _ data: Data,
-        keyPath: KeyPath<Storage, AsyncState<UserDefaultsStrategy, [Key: Value], Status>>,
+        address: KeyPath<Storage, AsyncState<UserDefaultsStrategy, Key, Value, [Key: Value]>>,
         key: Key
     ) {
         do {
             let value: Value = try decodeUserDefaultsValue(Value.self, from: data)
-            env.apply(value, keyPath: keyPath, key: key)
+            env.apply(address, key: key, value: value)
         } catch let error as DecodingError {
-            env.fail(error, keyPath: keyPath, key: key)
+            env.fail(address, key: key, error: error)
         } catch {
             env.fail(
-                DecodingError.dataCorrupted(
+                address,
+                key: key,
+                error: DecodingError.dataCorrupted(
                     DecodingError.Context(
                         codingPath: [],
                         debugDescription: String(describing: error)
                     )
-                ),
-                keyPath: keyPath,
-                key: key
+                )
             )
         }
     }

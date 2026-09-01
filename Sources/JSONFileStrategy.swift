@@ -30,58 +30,58 @@ public final class JSONFileStrategy: AsyncStrategy {
         self.env = env
     }
 
-    public func onRead<Storage: StateContainer, Value, Status>(
-        _ keyPath: KeyPath<Storage, AsyncState<JSONFileStrategy, Value, Status>>,
+    public func onRead<Storage: StateContainer, Value>(
+        _ address: KeyPath<Storage, AsyncState<JSONFileStrategy, NoKey, Value, Value>>,
         policy: Policy,
         current: Value
     ) {
         let root = PersistenceOverlay.jsonRoot(policy: policy, environmentID: env.environmentID)
-        let location = jsonFileLocation(keyPath)
+        let location = jsonFileLocation(address)
         do {
             if let data = try copyJSONFileData(root: root, location: location) {
-                applyEncoded(data, keyPath: keyPath)
+                applyEncoded(data, address: address)
             } else {
-                env.apply(current, keyPath: keyPath)
+                env.apply(address, value: current)
             }
         } catch {
-            env.fail(error, keyPath: keyPath)
+            env.fail(address, error: error)
         }
     }
 
-    public func onRead<Storage: StateContainer, Key: Hashable, Value, Status>(
-        _ keyPath: KeyPath<Storage, AsyncState<JSONFileStrategy, [Key: Value], Status>>,
+    public func onRead<Storage: StateContainer, Key: Hashable, Value>(
+        _ address: KeyPath<Storage, AsyncState<JSONFileStrategy, Key, Value, [Key: Value]>>,
         key: Key,
         policy: Policy,
         current: Value?
     ) {
         let root = PersistenceOverlay.jsonRoot(policy: policy, environmentID: env.environmentID)
-        let location = jsonFileLocation(keyPath, key: key)
+        let location = jsonFileLocation(address, key: key)
         do {
             if let data = try copyJSONFileData(root: root, location: location) {
-                applyEncoded(data, keyPath: keyPath, key: key)
+                applyEncoded(data, address: address, key: key)
             } else {
-                env.apply(current, keyPath: keyPath, key: key)
+                env.apply(address, key: key, value: current)
             }
         } catch {
-            env.fail(error, keyPath: keyPath, key: key)
+            env.fail(address, key: key, error: error)
         }
     }
 
-    public func onWrite<Storage: StateContainer, Value, Status>(
-        _ value: Value,
-        _ keyPath: KeyPath<Storage, AsyncState<JSONFileStrategy, Value, Status>>,
-        policy: Policy
+    public func onWrite<Storage: StateContainer, Value>(
+        _ address: KeyPath<Storage, AsyncState<JSONFileStrategy, NoKey, Value, Value>>,
+        policy: Policy,
+        value: Value
     ) {
-        persist(value, location: jsonFileLocation(keyPath), policy: policy)
+        persist(value, location: jsonFileLocation(address), policy: policy)
     }
 
-    public func onWrite<Storage: StateContainer, Key: Hashable, Value, Status>(
-        _ value: Value,
-        _ keyPath: KeyPath<Storage, AsyncState<JSONFileStrategy, [Key: Value], Status>>,
+    public func onWrite<Storage: StateContainer, Key: Hashable, Value>(
+        _ address: KeyPath<Storage, AsyncState<JSONFileStrategy, Key, Value, [Key: Value]>>,
         key: Key,
-        policy: Policy
+        policy: Policy,
+        value: Value
     ) {
-        persist(value, location: jsonFileLocation(keyPath, key: key), policy: policy)
+        persist(value, location: jsonFileLocation(address, key: key), policy: policy)
     }
 
     private func persist<Value>(_ value: Value, location: JSONFileLocation, policy: Policy) {
@@ -94,52 +94,52 @@ public final class JSONFileStrategy: AsyncStrategy {
         }
     }
 
-    private func applyEncoded<Storage: StateContainer, Value, Status>(
+    private func applyEncoded<Storage: StateContainer, Value>(
         _ data: Data,
-        keyPath: KeyPath<Storage, AsyncState<JSONFileStrategy, Value, Status>>
+        address: KeyPath<Storage, AsyncState<JSONFileStrategy, NoKey, Value, Value>>
     ) {
         do {
             let value: Value = try decodeJSONFileValue(Value.self, from: data)
-            env.apply(value, keyPath: keyPath)
+            env.apply(address, value: value)
         } catch let error as DecodingError {
-            env.fail(JSONFileFailure.decoding(error), keyPath: keyPath)
+            env.fail(address, error: JSONFileFailure.decoding(error))
         } catch {
             env.fail(
-                JSONFileFailure.decoding(
+                address,
+                error: JSONFileFailure.decoding(
                     DecodingError.dataCorrupted(
                         DecodingError.Context(
                             codingPath: [],
                             debugDescription: String(describing: error)
                         )
                     )
-                ),
-                keyPath: keyPath
+                )
             )
         }
     }
 
-    private func applyEncoded<Storage: StateContainer, Key: Hashable, Value, Status>(
+    private func applyEncoded<Storage: StateContainer, Key: Hashable, Value>(
         _ data: Data,
-        keyPath: KeyPath<Storage, AsyncState<JSONFileStrategy, [Key: Value], Status>>,
+        address: KeyPath<Storage, AsyncState<JSONFileStrategy, Key, Value, [Key: Value]>>,
         key: Key
     ) {
         do {
             let value: Value = try decodeJSONFileValue(Value.self, from: data)
-            env.apply(value, keyPath: keyPath, key: key)
+            env.apply(address, key: key, value: value)
         } catch let error as DecodingError {
-            env.fail(JSONFileFailure.decoding(error), keyPath: keyPath, key: key)
+            env.fail(address, key: key, error: JSONFileFailure.decoding(error))
         } catch {
             env.fail(
-                JSONFileFailure.decoding(
+                address,
+                key: key,
+                error: JSONFileFailure.decoding(
                     DecodingError.dataCorrupted(
                         DecodingError.Context(
                             codingPath: [],
                             debugDescription: String(describing: error)
                         )
                     )
-                ),
-                keyPath: keyPath,
-                key: key
+                )
             )
         }
     }

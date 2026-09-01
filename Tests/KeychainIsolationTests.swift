@@ -83,7 +83,7 @@ struct KeychainIsolationTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\iCloudSecrets.token)
+        iso.environment.preheat(\iCloudSecrets.$token)
         iso.environment.perform(SetiCloudToken(value: "secret"))
         let account = "smkc.\(String(describing: \iCloudSecrets.$token))"
         try await iso.waitForKeychainPersistOut(account: account)
@@ -123,7 +123,7 @@ struct KeychainIsolationTests {
         iso.seed {
             Write(\SessionSecrets.token, "secret")
         }
-        iso.environment.preheat(\SessionSecrets.token)
+        iso.environment.preheat(\SessionSecrets.$token)
         try await iso.waitForKeychainPersistOut(account: account)
 
         #expect(iso.additionalEnvironment().snapshot(\SessionSecrets.token) == "secret")

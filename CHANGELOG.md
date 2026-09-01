@@ -9,6 +9,7 @@ Experimental Satellite `0.9.0`. Depends on StateManagement `0.9.2`. In-repo DocC
 ### Changed
 
 - Strategy kicks take the `$` Address. No Value-path `WritableKeyPath` cast in `onRead`. 0.9.x break, no shim.
+- Tracks the core's `AsyncState<S, Key, Entry, Value>` reshape: kicks are address-first with the payload last, and each Policy's `convenience init` pins `S` by constraining `Key` and `Entry` rather than `Status`. `preheat` takes the `$` Address, keyed `preheat` takes `keys:`. Call sites change, stored keys do not. 0.9.x break, no shim.
 
 ### Added
 

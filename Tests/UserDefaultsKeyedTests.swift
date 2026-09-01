@@ -38,7 +38,7 @@ struct UserDefaultsKeyedTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\FlagPrefs.flags, key: "a")
+        iso.environment.preheat(\FlagPrefs.$flags, keys: ["a"])
         iso.environment.perform(SetFlag(key: "a", value: true))
 
         let key = "smud.\(String(describing: \FlagPrefs.$flags))#a"

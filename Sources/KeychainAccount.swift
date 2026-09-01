@@ -16,17 +16,17 @@ import Foundation
 import StateManagement
 
 func keychainAccount<Storage: StateContainer, Value>(
-    _ keyPath: KeyPath<Storage, Value>
+    _ address: KeyPath<Storage, Value>
 ) -> String {
-    "smkc.\(dollarAddressDescription(keyPath))"
+    "smkc.\(dollarAddressDescription(address))"
 }
 
 func keychainAccount<Storage: StateContainer, Value, Key: Hashable>(
-    _ keyPath: KeyPath<Storage, Value>,
+    _ address: KeyPath<Storage, Value>,
     key: Key
 ) -> String {
     guard let lossless = key as? any LosslessStringConvertible else {
         preconditionFailure("SMLocalPersistence keyed keys must be LosslessStringConvertible")
     }
-    return "smkc.\(dollarAddressDescription(keyPath))#\(lossless.description)"
+    return "smkc.\(dollarAddressDescription(address))#\(lossless.description)"
 }

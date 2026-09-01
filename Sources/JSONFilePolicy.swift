@@ -40,15 +40,13 @@ extension AsyncState where S == JSONFileStrategy {
     /// Pins `S` to ``JSONFileStrategy``.
     @_disfavoredOverload
     public convenience init(wrappedValue: Value, _ policy: JSONFilePolicy)
-        where Status == SourceStatus<JSONFileStrategy.Failure> {
+        where Key == NoKey, Entry == Value {
         self.init(wrappedValue: wrappedValue, policy: policy)
     }
 
     /// Pins `S` to ``JSONFileStrategy``.
-    public convenience init<Key: Hashable, Output>(
-        wrappedValue: [Key: Output],
-        _ policy: JSONFilePolicy
-    ) where Value == [Key: Output], Status == [Key: SourceStatus<JSONFileStrategy.Failure>] {
+    public convenience init(wrappedValue: [Key: Entry], _ policy: JSONFilePolicy)
+        where Value == [Key: Entry] {
         self.init(wrappedValue: wrappedValue, policy: policy)
     }
 }

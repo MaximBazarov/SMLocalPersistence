@@ -43,7 +43,7 @@ struct IsolatedPersistenceTests {
         defer { iso.clear() }
         let key = "smud.\(String(describing: \ThemePrefs.$theme))"
 
-        iso.environment.preheat(\ThemePrefs.theme)
+        iso.environment.preheat(\ThemePrefs.$theme)
         iso.environment.perform(SetTheme(value: "dark"))
         try await iso.waitForPersistOut(key: key)
 
@@ -75,7 +75,7 @@ struct IsolatedPersistenceTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\ThemePrefs.theme)
+        iso.environment.preheat(\ThemePrefs.$theme)
         iso.environment.perform(SetTheme(value: "dark"))
         try await iso.waitForPersistOut(key: key)
 
@@ -93,7 +93,7 @@ struct IsolatedPersistenceTests {
         iso.seed {
             Write(\ThemePrefs.theme, "dark")
         }
-        iso.environment.preheat(\ThemePrefs.theme)
+        iso.environment.preheat(\ThemePrefs.$theme)
         try await iso.waitForPersistOut(key: key)
 
         #expect(iso.additionalEnvironment().snapshot(\ThemePrefs.theme) == "dark")
@@ -106,7 +106,7 @@ struct IsolatedPersistenceTests {
         defer { iso.clear() }
         let key = "smud.\(String(describing: \ThemePrefs.$theme))"
 
-        iso.environment.preheat(\ThemePrefs.theme)
+        iso.environment.preheat(\ThemePrefs.$theme)
         iso.environment.perform(SetTheme(value: "dark"))
         try await iso.waitForPersistOut(key: key)
 
@@ -124,7 +124,7 @@ struct IsolatedPersistenceTests {
         defer { iso.clear() }
         let key = "smud.\(String(describing: \NamedSuitePrefs.$theme))"
 
-        iso.environment.preheat(\NamedSuitePrefs.theme)
+        iso.environment.preheat(\NamedSuitePrefs.$theme)
         iso.environment.perform(SetNamedSuiteTheme(value: "dark"))
         try await iso.waitForPersistOut(key: key)
 

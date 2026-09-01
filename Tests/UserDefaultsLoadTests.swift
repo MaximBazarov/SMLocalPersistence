@@ -99,7 +99,7 @@ struct UserDefaultsLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\OptionalPrefs.nickname)
+        iso.environment.preheat(\OptionalPrefs.$nickname)
         iso.environment.perform(SetNickname(value: "ada"))
         let key = "smud.\(String(describing: \OptionalPrefs.$nickname))"
         try await iso.waitForPersistOut(key: key)

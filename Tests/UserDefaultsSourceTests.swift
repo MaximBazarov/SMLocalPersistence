@@ -26,7 +26,7 @@ struct UserDefaultsStrategyTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\ThemePrefs.theme)
+        iso.environment.preheat(\ThemePrefs.$theme)
 
         #expect(iso.environment.snapshot(\ThemePrefs.theme) == "system")
         guard case .settled = iso.environment.snapshot(\ThemePrefs.$theme.status) else {

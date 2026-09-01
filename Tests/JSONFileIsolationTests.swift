@@ -84,7 +84,7 @@ struct JSONFileIsolationTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\DraftNotes.body)
+        iso.environment.preheat(\DraftNotes.$body)
         iso.environment.perform(SetBody(value: "hello"))
         try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
@@ -121,7 +121,7 @@ struct JSONFileIsolationTests {
         iso.seed {
             Write(\DraftNotes.body, "hello")
         }
-        iso.environment.preheat(\DraftNotes.body)
+        iso.environment.preheat(\DraftNotes.$body)
         try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
 
         #expect(iso.additionalEnvironment().snapshot(\DraftNotes.body) == "hello")

@@ -30,58 +30,58 @@ public final class KeychainStrategy: AsyncStrategy {
         self.env = env
     }
 
-    public func onRead<Storage: StateContainer, Value, Status>(
-        _ keyPath: KeyPath<Storage, AsyncState<KeychainStrategy, Value, Status>>,
+    public func onRead<Storage: StateContainer, Value>(
+        _ address: KeyPath<Storage, AsyncState<KeychainStrategy, NoKey, Value, Value>>,
         policy: Policy,
         current: Value
     ) {
         let identity = PersistenceOverlay.keychain(policy: policy, environmentID: env.environmentID)
-        let account = keychainAccount(keyPath)
+        let account = keychainAccount(address)
         do {
             if let data = try copyKeychainData(identity: identity, account: account) {
-                applyEncoded(data, keyPath: keyPath)
+                applyEncoded(data, address: address)
             } else {
-                env.apply(current, keyPath: keyPath)
+                env.apply(address, value: current)
             }
         } catch {
-            env.fail(error, keyPath: keyPath)
+            env.fail(address, error: error)
         }
     }
 
-    public func onRead<Storage: StateContainer, Key: Hashable, Value, Status>(
-        _ keyPath: KeyPath<Storage, AsyncState<KeychainStrategy, [Key: Value], Status>>,
+    public func onRead<Storage: StateContainer, Key: Hashable, Value>(
+        _ address: KeyPath<Storage, AsyncState<KeychainStrategy, Key, Value, [Key: Value]>>,
         key: Key,
         policy: Policy,
         current: Value?
     ) {
         let identity = PersistenceOverlay.keychain(policy: policy, environmentID: env.environmentID)
-        let account = keychainAccount(keyPath, key: key)
+        let account = keychainAccount(address, key: key)
         do {
             if let data = try copyKeychainData(identity: identity, account: account) {
-                applyEncoded(data, keyPath: keyPath, key: key)
+                applyEncoded(data, address: address, key: key)
             } else {
-                env.apply(current, keyPath: keyPath, key: key)
+                env.apply(address, key: key, value: current)
             }
         } catch {
-            env.fail(error, keyPath: keyPath, key: key)
+            env.fail(address, key: key, error: error)
         }
     }
 
-    public func onWrite<Storage: StateContainer, Value, Status>(
-        _ value: Value,
-        _ keyPath: KeyPath<Storage, AsyncState<KeychainStrategy, Value, Status>>,
-        policy: Policy
+    public func onWrite<Storage: StateContainer, Value>(
+        _ address: KeyPath<Storage, AsyncState<KeychainStrategy, NoKey, Value, Value>>,
+        policy: Policy,
+        value: Value
     ) {
-        persist(value, account: keychainAccount(keyPath), policy: policy)
+        persist(value, account: keychainAccount(address), policy: policy)
     }
 
-    public func onWrite<Storage: StateContainer, Key: Hashable, Value, Status>(
-        _ value: Value,
-        _ keyPath: KeyPath<Storage, AsyncState<KeychainStrategy, [Key: Value], Status>>,
+    public func onWrite<Storage: StateContainer, Key: Hashable, Value>(
+        _ address: KeyPath<Storage, AsyncState<KeychainStrategy, Key, Value, [Key: Value]>>,
         key: Key,
-        policy: Policy
+        policy: Policy,
+        value: Value
     ) {
-        persist(value, account: keychainAccount(keyPath, key: key), policy: policy)
+        persist(value, account: keychainAccount(address, key: key), policy: policy)
     }
 
     private func persist<Value>(_ value: Value, account: String, policy: Policy) {
@@ -94,52 +94,52 @@ public final class KeychainStrategy: AsyncStrategy {
         }
     }
 
-    private func applyEncoded<Storage: StateContainer, Value, Status>(
+    private func applyEncoded<Storage: StateContainer, Value>(
         _ data: Data,
-        keyPath: KeyPath<Storage, AsyncState<KeychainStrategy, Value, Status>>
+        address: KeyPath<Storage, AsyncState<KeychainStrategy, NoKey, Value, Value>>
     ) {
         do {
             let value: Value = try decodeUserDefaultsValue(Value.self, from: data)
-            env.apply(value, keyPath: keyPath)
+            env.apply(address, value: value)
         } catch let error as DecodingError {
-            env.fail(KeychainFailure.decoding(error), keyPath: keyPath)
+            env.fail(address, error: KeychainFailure.decoding(error))
         } catch {
             env.fail(
-                KeychainFailure.decoding(
+                address,
+                error: KeychainFailure.decoding(
                     DecodingError.dataCorrupted(
                         DecodingError.Context(
                             codingPath: [],
                             debugDescription: String(describing: error)
                         )
                     )
-                ),
-                keyPath: keyPath
+                )
             )
         }
     }
 
-    private func applyEncoded<Storage: StateContainer, Key: Hashable, Value, Status>(
+    private func applyEncoded<Storage: StateContainer, Key: Hashable, Value>(
         _ data: Data,
-        keyPath: KeyPath<Storage, AsyncState<KeychainStrategy, [Key: Value], Status>>,
+        address: KeyPath<Storage, AsyncState<KeychainStrategy, Key, Value, [Key: Value]>>,
         key: Key
     ) {
         do {
             let value: Value = try decodeUserDefaultsValue(Value.self, from: data)
-            env.apply(value, keyPath: keyPath, key: key)
+            env.apply(address, key: key, value: value)
         } catch let error as DecodingError {
-            env.fail(KeychainFailure.decoding(error), keyPath: keyPath, key: key)
+            env.fail(address, key: key, error: KeychainFailure.decoding(error))
         } catch {
             env.fail(
-                KeychainFailure.decoding(
+                address,
+                key: key,
+                error: KeychainFailure.decoding(
                     DecodingError.dataCorrupted(
                         DecodingError.Context(
                             codingPath: [],
                             debugDescription: String(describing: error)
                         )
                     )
-                ),
-                keyPath: keyPath,
-                key: key
+                )
             )
         }
     }

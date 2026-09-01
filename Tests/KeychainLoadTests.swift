@@ -120,7 +120,7 @@ struct KeychainLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\OptionalSecrets.pin)
+        iso.environment.preheat(\OptionalSecrets.$pin)
         iso.environment.perform(SetPin(value: "1234"))
         let account = "smkc.\(String(describing: \OptionalSecrets.$pin))"
         try await iso.waitForKeychainPersistOut(account: account)

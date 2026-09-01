@@ -118,7 +118,7 @@ struct JSONFileLoadTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\OptionalNotes.subtitle)
+        iso.environment.preheat(\OptionalNotes.$subtitle)
         iso.environment.perform(SetSubtitle(value: "draft"))
         let location = jsonFileLocation(\OptionalNotes.$subtitle)
         try await iso.waitForJSONPersistOut(location: location)

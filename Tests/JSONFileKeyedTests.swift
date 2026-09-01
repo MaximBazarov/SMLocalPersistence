@@ -50,7 +50,7 @@ struct JSONFileKeyedTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\NoteBag.notes, key: "a")
+        iso.environment.preheat(\NoteBag.$notes, keys: ["a"])
         iso.environment.perform(SetBagNote(key: "a", value: "one"))
 
         try await iso.waitForJSONPersistOut(location: jsonFileLocation(\NoteBag.$notes, key: "a"))
@@ -68,8 +68,8 @@ struct JSONFileKeyedTests {
         let iso = IsolatedPersistence()
         defer { iso.clear() }
 
-        iso.environment.preheat(\NoteBag.notes, key: "a")
-        iso.environment.preheat(\NoteBag.notes, key: "b")
+        iso.environment.preheat(\NoteBag.$notes, keys: ["a"])
+        iso.environment.preheat(\NoteBag.$notes, keys: ["b"])
         iso.environment.perform(SetBagNote(key: "a", value: "one"))
         iso.environment.perform(SetBagNote(key: "b", value: "two"))
 

@@ -21,16 +21,16 @@ struct JSONFileLocation: Equatable, Sendable {
 }
 
 func jsonFileLocation<Storage: StateContainer, Value>(
-    _ keyPath: KeyPath<Storage, Value>
+    _ address: KeyPath<Storage, Value>
 ) -> JSONFileLocation {
     JSONFileLocation(
         folder: String(reflecting: Storage.self),
-        file: jsonFileName(dollarAddressDescription(keyPath))
+        file: jsonFileName(dollarAddressDescription(address))
     )
 }
 
 func jsonFileLocation<Storage: StateContainer, Value, Key: Hashable>(
-    _ keyPath: KeyPath<Storage, Value>,
+    _ address: KeyPath<Storage, Value>,
     key: Key
 ) -> JSONFileLocation {
     guard let lossless = key as? any LosslessStringConvertible else {
@@ -38,7 +38,7 @@ func jsonFileLocation<Storage: StateContainer, Value, Key: Hashable>(
     }
     return JSONFileLocation(
         folder: String(reflecting: Storage.self),
-        file: jsonFileName("\(dollarAddressDescription(keyPath))#\(lossless.description)")
+        file: jsonFileName("\(dollarAddressDescription(address))#\(lossless.description)")
     )
 }
 
