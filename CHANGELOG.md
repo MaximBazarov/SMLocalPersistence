@@ -8,7 +8,7 @@ Experimental Satellite `0.9.0`. Depends on StateManagement `0.9.4`. In-repo DocC
 
 ### Removed
 
-- `IsolatedPersistence`, `IsolatedPersistenceToken`, and the DEBUG `.sharedEnvironment(.isolatedPersistence)` / `.seedEnvironment(.isolatedPersistence) { }` View modifiers. App tests and previews isolate through StateManagement's TestingSupport (I9); the Satellite suite exercises real stores with a unique Persistence identity per test Container through the public Policy initializers. Strategies resolve Persistence identity from Policy alone at `onRead` — no overlay.
+- `IsolatedPersistence`, `IsolatedPersistenceToken`, and the DEBUG `.sharedEnvironment(.isolatedPersistence)` / `.seedEnvironment(.isolatedPersistence) { }` View modifiers. App tests and previews that must not touch a store seat a no-op strategy with `SharedEnvironment.install(_:)`. The Satellite suite exercises real stores with a unique Persistence identity per test Container through the public Policy initializers. Strategies resolve Persistence identity from Policy alone at `onRead` — no overlay.
 
 ### Changed
 

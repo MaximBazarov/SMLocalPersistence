@@ -22,7 +22,7 @@ final class Notes: StateContainer {
 
 Values are `Codable`. UserDefaults keys and Keychain accounts are the Address. JSON-file is one file per Address, folders per Container type. Load on first read or `preheat`. A Sync write persists through `onWrite`.
 
-App tests and previews isolate through StateManagement's TestingSupport (I9): silence the strategy, no store is touched. Production Containers stay `@AsyncState(.userDefaults)` or an app Policy static. `SharedEnvironment()` stays production.
+App tests and previews that must not touch a store seat a no-op strategy with `SharedEnvironment.install(_:)`. To exercise a real store, give each test Container a unique Persistence identity through the public Policy initializers. Production Containers stay `@AsyncState(.userDefaults)` or an app Policy static. `SharedEnvironment()` stays production.
 
 ## Requirements
 
