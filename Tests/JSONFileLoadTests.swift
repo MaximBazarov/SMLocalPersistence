@@ -87,7 +87,7 @@ struct JSONFileLoadTests {
         }
     }
 
-    @Test("Corrupt JSON data fails Source status and leaves the seed")
+    @Test("Corrupt JSON data fails async state status and leaves the seed")
     func corruptDataFailsStatus() throws {
         defer { removeJSONRoot(corruptRoot) }
         let location = jsonFileLocation(\JFCorruptNotes.$body)

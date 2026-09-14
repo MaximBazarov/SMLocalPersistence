@@ -73,7 +73,7 @@ struct UserDefaultsLoadTests {
         }
     }
 
-    @Test("Corrupt UserDefaults data fails Source status and leaves the seed")
+    @Test("Corrupt UserDefaults data fails async state status and leaves the seed")
     func corruptDataFailsStatus() throws {
         defer { removeUserDefaultsSuite(corruptSuite) }
         let defaults = try #require(UserDefaults(suiteName: corruptSuite))

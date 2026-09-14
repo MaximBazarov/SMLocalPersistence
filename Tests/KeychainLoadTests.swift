@@ -83,7 +83,7 @@ struct KeychainLoadTests {
         }
     }
 
-    @Test("Corrupt Keychain data fails Source status and leaves the seed")
+    @Test("Corrupt Keychain data fails async state status and leaves the seed")
     func corruptDataFailsStatus() throws {
         defer { removeKeychainItems(service: corruptService) }
         let account = keychainAccount(\KCCorruptSecrets.$token)
