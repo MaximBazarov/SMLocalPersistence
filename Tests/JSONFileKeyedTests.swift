@@ -17,29 +17,38 @@ import Testing
 import StateManagement
 @testable import SMLocalPersistence
 
-final class NoteBag: StateContainer {
-    @AsyncState(.drafts) var notes: [String: String] = [:]
+private let keyedMissingRoot = uniqueJSONRoot()
+private let keyedPersistRoot = uniqueJSONRoot()
+private let keyedSplitRoot = uniqueJSONRoot()
+
+extension JSONFilePolicy {
+    static let jfKeyedMissing = JSONFilePolicy(root: keyedMissingRoot)
+    static let jfKeyedPersist = JSONFilePolicy(root: keyedPersistRoot)
+    static let jfKeyedSplit = JSONFilePolicy(root: keyedSplitRoot)
 }
 
-struct SetBagNote: SyncOperation {
-    let key: String
-    let value: String
-    func perform(in env: SyncOperationEnvironment) {
-        env.write(\NoteBag.notes, key: key, value: value)
-    }
+final class JFKeyedMissingBag: StateContainer {
+    @AsyncState(.jfKeyedMissing) var notes: [String: String] = [:]
 }
 
-@Suite(.serialized)
+final class JFKeyedPersistBag: StateContainer {
+    @AsyncState(.jfKeyedPersist) var notes: [String: String] = [:]
+}
+
+final class JFKeyedSplitBag: StateContainer {
+    @AsyncState(.jfKeyedSplit) var notes: [String: String] = [:]
+}
+
 @MainActor
 struct JSONFileKeyedTests {
 
     @Test("A missing keyed optional file settles nil")
     func missingKeyedFileSettlesNil() throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeJSONRoot(keyedMissingRoot) }
+        let env = SharedEnvironment()
 
-        #expect(iso.environment.snapshot(\NoteBag.notes, key: "missing") == nil)
-        guard case .settled = iso.environment.snapshot(\NoteBag.$notes.status, key: "missing") else {
+        #expect(env.snapshot(\JFKeyedMissingBag.notes, key: "missing") == nil)
+        guard case .settled = env.snapshot(\JFKeyedMissingBag.$notes.status, key: "missing") else {
             Issue.record("expected settled")
             return
         }
@@ -47,17 +56,21 @@ struct JSONFileKeyedTests {
 
     @Test("A keyed Sync write persists; a second Environment loads that key")
     func keyedPersistOutLoadsInSecondEnvironment() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeJSONRoot(keyedPersistRoot) }
+        let env = SharedEnvironment()
 
-        iso.environment.preheat(\NoteBag.$notes, keys: ["a"])
-        iso.environment.perform(SetBagNote(key: "a", value: "one"))
+        env.preheat(\JFKeyedPersistBag.$notes, keys: ["a"])
+        env.perform(WriteEntry(path: \JFKeyedPersistBag.notes, key: "a", value: "one"))
 
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\NoteBag.$notes, key: "a"))
+        let url = jsonFileURL(
+            root: keyedPersistRoot,
+            location: jsonFileLocation(\JFKeyedPersistBag.$notes, key: "a")
+        )
+        try await waitFor { FileManager.default.fileExists(atPath: url.path) }
 
-        let env2 = iso.additionalEnvironment()
-        #expect(env2.snapshot(\NoteBag.notes, key: "a") == "one")
-        guard case .settled = env2.snapshot(\NoteBag.$notes.status, key: "a") else {
+        let env2 = SharedEnvironment()
+        #expect(env2.snapshot(\JFKeyedPersistBag.notes, key: "a") == "one")
+        guard case .settled = env2.snapshot(\JFKeyedPersistBag.$notes.status, key: "a") else {
             Issue.record("expected settled")
             return
         }
@@ -65,23 +78,25 @@ struct JSONFileKeyedTests {
 
     @Test("Keyed Values are one file per key")
     func keyedValuesDoNotShareAFile() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeJSONRoot(keyedSplitRoot) }
+        let env = SharedEnvironment()
 
-        iso.environment.preheat(\NoteBag.$notes, keys: ["a"])
-        iso.environment.preheat(\NoteBag.$notes, keys: ["b"])
-        iso.environment.perform(SetBagNote(key: "a", value: "one"))
-        iso.environment.perform(SetBagNote(key: "b", value: "two"))
+        env.preheat(\JFKeyedSplitBag.$notes, keys: ["a"])
+        env.preheat(\JFKeyedSplitBag.$notes, keys: ["b"])
+        env.perform(WriteEntry(path: \JFKeyedSplitBag.notes, key: "a", value: "one"))
+        env.perform(WriteEntry(path: \JFKeyedSplitBag.notes, key: "b", value: "two"))
 
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\NoteBag.$notes, key: "a"))
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\NoteBag.$notes, key: "b"))
+        let urlA = jsonFileURL(root: keyedSplitRoot, location: jsonFileLocation(\JFKeyedSplitBag.$notes, key: "a"))
+        let urlB = jsonFileURL(root: keyedSplitRoot, location: jsonFileLocation(\JFKeyedSplitBag.$notes, key: "b"))
+        try await waitFor { FileManager.default.fileExists(atPath: urlA.path) }
+        try await waitFor { FileManager.default.fileExists(atPath: urlB.path) }
 
-        let env2 = iso.additionalEnvironment()
-        #expect(env2.snapshot(\NoteBag.notes, key: "a") == "one")
-        #expect(env2.snapshot(\NoteBag.notes, key: "b") == "two")
+        let env2 = SharedEnvironment()
+        #expect(env2.snapshot(\JFKeyedSplitBag.notes, key: "a") == "one")
+        #expect(env2.snapshot(\JFKeyedSplitBag.notes, key: "b") == "two")
         #expect(
-            jsonFileLocation(\NoteBag.$notes, key: "a")
-                != jsonFileLocation(\NoteBag.$notes, key: "b")
+            jsonFileLocation(\JFKeyedSplitBag.$notes, key: "a")
+                != jsonFileLocation(\JFKeyedSplitBag.$notes, key: "b")
         )
     }
 }

@@ -17,19 +17,34 @@ import Testing
 import StateManagement
 @testable import SMLocalPersistence
 
-@Suite(.serialized)
+private let preheatSuite = uniqueSuiteName()
+private let noRowSuite = uniqueSuiteName()
+private let blindWriteSuite = uniqueSuiteName()
+
+final class UDPreheatPrefs: StateContainer {
+    @AsyncState(UserDefaultsPolicy(suiteName: preheatSuite)) var theme: String = "system"
+}
+
+final class UDNoRowPrefs: StateContainer {
+    @AsyncState(UserDefaultsPolicy(suiteName: noRowSuite)) var theme: String = "system"
+}
+
+final class UDBlindWritePrefs: StateContainer {
+    @AsyncState(UserDefaultsPolicy(suiteName: blindWriteSuite)) var theme: String = "system"
+}
+
 @MainActor
 struct UserDefaultsStrategyTests {
 
     @Test("Preheat loads with no prior read")
     func preheatLoadsWithNoPriorRead() throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeUserDefaultsSuite(preheatSuite) }
+        let env = SharedEnvironment()
 
-        iso.environment.preheat(\ThemePrefs.$theme)
+        env.preheat(\UDPreheatPrefs.$theme)
 
-        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "system")
-        guard case .settled = iso.environment.snapshot(\ThemePrefs.$theme.status) else {
+        #expect(env.snapshot(\UDPreheatPrefs.theme) == "system")
+        guard case .settled = env.snapshot(\UDPreheatPrefs.$theme.status) else {
             Issue.record("expected settled")
             return
         }
@@ -37,25 +52,29 @@ struct UserDefaultsStrategyTests {
 
     @Test("Missing onRead does not write the suite")
     func missingOnReadDoesNotWriteSuite() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeUserDefaultsSuite(noRowSuite) }
+        let env = SharedEnvironment()
 
-        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "system")
-        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
-        await #expect(throws: PersistOutTimeout.self) {
-            try await iso.waitForPersistOut(key: key)
+        #expect(env.snapshot(\UDNoRowPrefs.theme) == "system")
+
+        let defaults = try #require(UserDefaults(suiteName: noRowSuite))
+        let key = userDefaultsKey(\UDNoRowPrefs.$theme)
+        await #expect(throws: TimedOut.self) {
+            try await waitFor(timeout: .milliseconds(200)) { defaults.data(forKey: key) != nil }
         }
     }
 
     @Test("A Sync write persists without a prior read")
     func writeWithoutPriorReadPersists() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeUserDefaultsSuite(blindWriteSuite) }
+        let env = SharedEnvironment()
 
-        iso.environment.perform(SetTheme(value: "dark"))
-        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
-        try await iso.waitForPersistOut(key: key)
+        env.perform(WriteValue(path: \UDBlindWritePrefs.theme, value: "dark"))
 
-        #expect(iso.additionalEnvironment().snapshot(\ThemePrefs.theme) == "dark")
+        let defaults = try #require(UserDefaults(suiteName: blindWriteSuite))
+        let key = userDefaultsKey(\UDBlindWritePrefs.$theme)
+        try await waitFor { defaults.data(forKey: key) != nil }
+
+        #expect(SharedEnvironment().snapshot(\UDBlindWritePrefs.theme) == "dark")
     }
 }

@@ -23,7 +23,7 @@ public enum JSONFileFailure: Error {
 
 /// Policy for ``JSONFileStrategy``. The app declares a static. No shipped `.jsonFile`.
 ///
-/// IsolatedPersistence overlays Persistence identity (`root`) at `onRead`.
+/// Persistence identity is the `root`, resolved at `onRead`.
 public struct JSONFilePolicy: Sendable, Equatable {
     public let root: URL
 

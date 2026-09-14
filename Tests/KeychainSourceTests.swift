@@ -13,49 +13,78 @@
 //===----------------------------------------------------------------------===//
 
 import Foundation
+import Security
 import Testing
 import StateManagement
 @testable import SMLocalPersistence
 
-@Suite(.serialized)
+private let preheatService = uniqueKeychainService()
+private let noRowService = uniqueKeychainService()
+private let blindWriteService = uniqueKeychainService()
+
+extension KeychainPolicy {
+    static let kcPreheat = KeychainPolicy.testService(preheatService)
+    static let kcNoRow = KeychainPolicy.testService(noRowService)
+    static let kcBlindWrite = KeychainPolicy.testService(blindWriteService)
+}
+
+final class KCPreheatSecrets: StateContainer {
+    @AsyncState(.kcPreheat) var token: String = ""
+}
+
+final class KCNoRowSecrets: StateContainer {
+    @AsyncState(.kcNoRow) var token: String = ""
+}
+
+final class KCBlindWriteSecrets: StateContainer {
+    @AsyncState(.kcBlindWrite) var token: String = ""
+}
+
+@Suite(.enabled(if: keychainStoreAvailable, "this runner has no keychain entitlement"))
 @MainActor
 struct KeychainStrategyTests {
 
     @Test("Preheat loads with no prior read")
     func preheatLoadsWithNoPriorRead() throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeKeychainItems(service: preheatService) }
+        let env = SharedEnvironment()
 
-        iso.environment.preheat(\SessionSecrets.$token)
+        env.preheat(\KCPreheatSecrets.$token)
 
-        #expect(iso.environment.snapshot(\SessionSecrets.token) == "")
-        guard case .settled = iso.environment.snapshot(\SessionSecrets.$token.status) else {
+        #expect(env.snapshot(\KCPreheatSecrets.token) == "")
+        guard case .settled = env.snapshot(\KCPreheatSecrets.$token.status) else {
             Issue.record("expected settled")
             return
         }
     }
 
-    @Test("A Sync write persists without a prior read")
-    func writeWithoutPriorReadPersists() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
-
-        iso.environment.perform(SetToken(value: "secret"))
-        let account = "smkc.\(String(describing: \SessionSecrets.$token))"
-        try await iso.waitForKeychainPersistOut(account: account)
-
-        #expect(iso.additionalEnvironment().snapshot(\SessionSecrets.token) == "secret")
-    }
-
     @Test("Missing onRead does not create a Keychain item")
     func missingOnReadDoesNotWrite() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeKeychainItems(service: noRowService) }
+        let env = SharedEnvironment()
 
-        #expect(iso.environment.snapshot(\SessionSecrets.token) == "")
-        let account = "smkc.\(String(describing: \SessionSecrets.$token))"
-        await #expect(throws: PersistOutTimeout.self) {
-            try await iso.waitForKeychainPersistOut(account: account)
+        #expect(env.snapshot(\KCNoRowSecrets.token) == "")
+
+        let identity = KeychainPolicy.kcNoRow.identity
+        let account = keychainAccount(\KCNoRowSecrets.$token)
+        await #expect(throws: TimedOut.self) {
+            try await waitFor(timeout: .milliseconds(200)) {
+                keychainData(identity: identity, account: account) != nil
+            }
         }
+    }
+
+    @Test("A Sync write persists without a prior read")
+    func writeWithoutPriorReadPersists() async throws {
+        defer { removeKeychainItems(service: blindWriteService) }
+        let env = SharedEnvironment()
+
+        env.perform(WriteValue(path: \KCBlindWriteSecrets.token, value: "secret"))
+
+        let identity = KeychainPolicy.kcBlindWrite.identity
+        let account = keychainAccount(\KCBlindWriteSecrets.$token)
+        try await waitFor { keychainData(identity: identity, account: account) != nil }
+
+        #expect(SharedEnvironment().snapshot(\KCBlindWriteSecrets.token) == "secret")
     }
 }

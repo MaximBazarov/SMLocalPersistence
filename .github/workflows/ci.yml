@@ -19,7 +19,7 @@ jobs:
           - platform: iOS
             command: >-
               xcodebuild test
-              -scheme SMLocalPersistence-Package
+              -scheme SMLocalPersistence
               -destination 'platform=iOS Simulator,name=iPhone 17'
 
     steps:

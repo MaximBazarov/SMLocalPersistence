@@ -35,7 +35,7 @@ public final class KeychainStrategy: AsyncStrategy {
         policy: Policy,
         current: Value
     ) {
-        let identity = PersistenceOverlay.keychain(policy: policy, environmentID: env.environmentID)
+        let identity = policy.identity
         let account = keychainAccount(address)
         do {
             if let data = try copyKeychainData(identity: identity, account: account) {
@@ -54,7 +54,7 @@ public final class KeychainStrategy: AsyncStrategy {
         policy: Policy,
         current: Value?
     ) {
-        let identity = PersistenceOverlay.keychain(policy: policy, environmentID: env.environmentID)
+        let identity = policy.identity
         let account = keychainAccount(address, key: key)
         do {
             if let data = try copyKeychainData(identity: identity, account: account) {
@@ -85,11 +85,11 @@ public final class KeychainStrategy: AsyncStrategy {
     }
 
     private func persist<Value>(_ value: Value, account: String, policy: Policy) {
-        let identity = PersistenceOverlay.keychain(policy: policy, environmentID: env.environmentID)
+        let identity = policy.identity
         do {
             try env.perform(PersistKeychain(identity: identity, account: account, value: value))
         } catch {
-            // Persist-out does not fail Source status.
+            // Persist-out does not fail async state status.
             keychainStrategyLog.error("Persist-out failed: \(error.localizedDescription)")
         }
     }

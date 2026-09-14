@@ -13,40 +13,58 @@
 //===----------------------------------------------------------------------===//
 
 import Foundation
+import Security
 import Testing
 import StateManagement
 @testable import SMLocalPersistence
 
-final class TokenBag: StateContainer {
-    @AsyncState(.session) var tokens: [String: String] = [:]
+private let keyedMissingService = uniqueKeychainService()
+private let keyedPersistService = uniqueKeychainService()
+
+extension KeychainPolicy {
+    static let kcKeyedMissing = KeychainPolicy.testService(keyedMissingService)
+    static let kcKeyedPersist = KeychainPolicy.testService(keyedPersistService)
 }
 
-struct SetBagToken: SyncOperation {
-    let key: String
-    let value: String
-    func perform(in env: SyncOperationEnvironment) {
-        env.write(\TokenBag.tokens, key: key, value: value)
-    }
+final class KCKeyedMissingBag: StateContainer {
+    @AsyncState(.kcKeyedMissing) var tokens: [String: String] = [:]
 }
 
-@Suite(.serialized)
+final class KCKeyedPersistBag: StateContainer {
+    @AsyncState(.kcKeyedPersist) var tokens: [String: String] = [:]
+}
+
+@Suite(.enabled(if: keychainStoreAvailable, "this runner has no keychain entitlement"))
 @MainActor
 struct KeychainKeyedTests {
 
+    @Test("A missing keyed entry settles nil")
+    func missingKeyedEntrySettlesNil() throws {
+        defer { removeKeychainItems(service: keyedMissingService) }
+        let env = SharedEnvironment()
+
+        #expect(env.snapshot(\KCKeyedMissingBag.tokens, key: "missing") == nil)
+        guard case .settled = env.snapshot(\KCKeyedMissingBag.$tokens.status, key: "missing") else {
+            Issue.record("expected settled")
+            return
+        }
+    }
+
     @Test("A keyed Sync write persists; a second Environment loads that key")
     func keyedPersistOutLoadsInSecondEnvironment() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeKeychainItems(service: keyedPersistService) }
+        let env = SharedEnvironment()
 
-        iso.environment.preheat(\TokenBag.$tokens, keys: ["a"])
-        iso.environment.perform(SetBagToken(key: "a", value: "one"))
+        env.preheat(\KCKeyedPersistBag.$tokens, keys: ["a"])
+        env.perform(WriteEntry(path: \KCKeyedPersistBag.tokens, key: "a", value: "one"))
 
-        let account = "smkc.\(String(describing: \TokenBag.$tokens))#a"
-        try await iso.waitForKeychainPersistOut(account: account)
+        let identity = KeychainPolicy.kcKeyedPersist.identity
+        let account = keychainAccount(\KCKeyedPersistBag.$tokens, key: "a")
+        try await waitFor { keychainData(identity: identity, account: account) != nil }
 
-        let env2 = iso.additionalEnvironment()
-        #expect(env2.snapshot(\TokenBag.tokens, key: "a") == "one")
-        guard case .settled = env2.snapshot(\TokenBag.$tokens.status, key: "a") else {
+        let env2 = SharedEnvironment()
+        #expect(env2.snapshot(\KCKeyedPersistBag.tokens, key: "a") == "one")
+        guard case .settled = env2.snapshot(\KCKeyedPersistBag.$tokens.status, key: "a") else {
             Issue.record("expected settled")
             return
         }

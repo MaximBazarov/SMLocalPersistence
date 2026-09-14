@@ -13,9 +13,6 @@
 //===----------------------------------------------------------------------===//
 
 import Foundation
-import OSLog
-
-private let jsonLog = Logger(subsystem: "SMLocalPersistence", category: "JSONFile")
 
 func copyJSONFileData(root: URL, location: JSONFileLocation) throws(JSONFileFailure) -> Data? {
     let url = jsonFileURL(root: root, location: location)
@@ -56,17 +53,5 @@ func deleteJSONFile(root: URL, location: JSONFileLocation) throws(JSONFileFailur
             return
         }
         throw JSONFileFailure.io
-    }
-}
-
-func deleteJSONFileTree(root: URL) {
-    do {
-        try FileManager.default.removeItem(at: root)
-    } catch {
-        let nsError = error as NSError
-        if nsError.domain == NSCocoaErrorDomain && nsError.code == NSFileNoSuchFileError {
-            return
-        }
-        jsonLog.error("IsolatedPersistence JSON root clear failed: \(error.localizedDescription)")
     }
 }
