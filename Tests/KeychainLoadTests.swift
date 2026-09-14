@@ -18,48 +18,53 @@ import Testing
 import StateManagement
 @testable import SMLocalPersistence
 
+// One test Container per test; Persistence identity is a unique service through the
+// public Policy initializer, declared as a static the way an app would (P2, P16).
+
+private let missingService = uniqueKeychainService()
+private let missingOptionalService = uniqueKeychainService()
+private let corruptService = uniqueKeychainService()
+private let persistService = uniqueKeychainService()
+private let deleteService = uniqueKeychainService()
+
 extension KeychainPolicy {
-    static let session = KeychainPolicy(
-        accessibility: kSecAttrAccessibleAfterFirstUnlock,
-        accessGroup: nil,
-        synchronizable: false,
-        service: "smlp.tests.session"
-    )
+    static let kcMissing = KeychainPolicy.testService(missingService)
+    static let kcMissingOptional = KeychainPolicy.testService(missingOptionalService)
+    static let kcCorrupt = KeychainPolicy.testService(corruptService)
+    static let kcPersist = KeychainPolicy.testService(persistService)
+    static let kcDelete = KeychainPolicy.testService(deleteService)
 }
 
-final class SessionSecrets: StateContainer {
-    @AsyncState(.session) var token: String = ""
+final class KCMissingSecrets: StateContainer {
+    @AsyncState(.kcMissing) var token: String = ""
 }
 
-final class OptionalSecrets: StateContainer {
-    @AsyncState(.session) var pin: String? = nil
+final class KCMissingOptionalSecrets: StateContainer {
+    @AsyncState(.kcMissingOptional) var pin: String? = nil
 }
 
-struct SetToken: SyncOperation {
-    let value: String
-    func perform(in env: SyncOperationEnvironment) {
-        env.write(\SessionSecrets.token, value: value)
-    }
+final class KCCorruptSecrets: StateContainer {
+    @AsyncState(.kcCorrupt) var token: String = ""
 }
 
-struct SetPin: SyncOperation {
-    let value: String?
-    func perform(in env: SyncOperationEnvironment) {
-        env.write(\OptionalSecrets.pin, value: value)
-    }
+final class KCPersistSecrets: StateContainer {
+    @AsyncState(.kcPersist) var token: String = ""
 }
 
-@Suite(.serialized)
+final class KCDeleteSecrets: StateContainer {
+    @AsyncState(.kcDelete) var pin: String? = nil
+}
+
 @MainActor
 struct KeychainLoadTests {
 
     @Test("Missing Keychain item settles the Container default")
     func missingItemSettlesDefault() throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeKeychainItems(service: missingService) }
+        let env = SharedEnvironment()
 
-        #expect(iso.environment.snapshot(\SessionSecrets.token) == "")
-        guard case .settled = iso.environment.snapshot(\SessionSecrets.$token.status) else {
+        #expect(env.snapshot(\KCMissingSecrets.token) == "")
+        guard case .settled = env.snapshot(\KCMissingSecrets.$token.status) else {
             Issue.record("expected settled")
             return
         }
@@ -67,11 +72,11 @@ struct KeychainLoadTests {
 
     @Test("Missing optional item settles nil")
     func missingOptionalSettlesNil() throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeKeychainItems(service: missingOptionalService) }
+        let env = SharedEnvironment()
 
-        #expect(iso.environment.snapshot(\OptionalSecrets.pin) == nil)
-        guard case .settled = iso.environment.snapshot(\OptionalSecrets.$pin.status) else {
+        #expect(env.snapshot(\KCMissingOptionalSecrets.pin) == nil)
+        guard case .settled = env.snapshot(\KCMissingOptionalSecrets.$pin.status) else {
             Issue.record("expected settled")
             return
         }
@@ -79,14 +84,17 @@ struct KeychainLoadTests {
 
     @Test("Corrupt Keychain data fails Source status and leaves the seed")
     func corruptDataFailsStatus() throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeKeychainItems(service: corruptService) }
+        let account = keychainAccount(\KCCorruptSecrets.$token)
+        try upsertKeychainData(
+            identity: KeychainPolicy.kcCorrupt.identity,
+            account: account,
+            data: Data([0x00, 0x01, 0x02])
+        )
 
-        let account = "smkc.\(String(describing: \SessionSecrets.$token))"
-        try iso.plantKeychain(Data([0x00, 0x01, 0x02]), account: account)
-
-        #expect(iso.environment.snapshot(\SessionSecrets.token) == "")
-        guard case .error(let failure) = iso.environment.snapshot(\SessionSecrets.$token.status) else {
+        let env = SharedEnvironment()
+        #expect(env.snapshot(\KCCorruptSecrets.token) == "")
+        guard case .error(let failure) = env.snapshot(\KCCorruptSecrets.$token.status) else {
             Issue.record("expected error")
             return
         }
@@ -98,18 +106,19 @@ struct KeychainLoadTests {
 
     @Test("A Sync write persists; a second Environment loads the Value")
     func persistOutLoadsInSecondEnvironment() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeKeychainItems(service: persistService) }
+        let env = SharedEnvironment()
 
-        #expect(iso.environment.snapshot(\SessionSecrets.token) == "")
-        iso.environment.perform(SetToken(value: "secret"))
+        #expect(env.snapshot(\KCPersistSecrets.token) == "")
+        env.perform(WriteValue(path: \KCPersistSecrets.token, value: "secret"))
 
-        let account = "smkc.\(String(describing: \SessionSecrets.$token))"
-        try await iso.waitForKeychainPersistOut(account: account)
+        let identity = KeychainPolicy.kcPersist.identity
+        let account = keychainAccount(\KCPersistSecrets.$token)
+        try await waitFor { keychainData(identity: identity, account: account) != nil }
 
-        let env2 = iso.additionalEnvironment()
-        #expect(env2.snapshot(\SessionSecrets.token) == "secret")
-        guard case .settled = env2.snapshot(\SessionSecrets.$token.status) else {
+        let env2 = SharedEnvironment()
+        #expect(env2.snapshot(\KCPersistSecrets.token) == "secret")
+        guard case .settled = env2.snapshot(\KCPersistSecrets.$token.status) else {
             Issue.record("expected settled")
             return
         }
@@ -117,20 +126,21 @@ struct KeychainLoadTests {
 
     @Test("Optional nil deletes the Keychain item")
     func optionalNilDeletesItem() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeKeychainItems(service: deleteService) }
+        let env = SharedEnvironment()
+        let identity = KeychainPolicy.kcDelete.identity
+        let account = keychainAccount(\KCDeleteSecrets.$pin)
 
-        iso.environment.preheat(\OptionalSecrets.$pin)
-        iso.environment.perform(SetPin(value: "1234"))
-        let account = "smkc.\(String(describing: \OptionalSecrets.$pin))"
-        try await iso.waitForKeychainPersistOut(account: account)
+        env.preheat(\KCDeleteSecrets.$pin)
+        env.perform(WriteValue(path: \KCDeleteSecrets.pin, value: "1234" as String?))
+        try await waitFor { keychainData(identity: identity, account: account) != nil }
 
-        iso.environment.perform(SetPin(value: nil))
-        try await iso.waitForKeychainRemoval(account: account)
+        env.perform(WriteValue(path: \KCDeleteSecrets.pin, value: nil as String?))
+        try await waitFor { keychainData(identity: identity, account: account) == nil }
 
-        let env2 = iso.additionalEnvironment()
-        #expect(env2.snapshot(\OptionalSecrets.pin) == nil)
-        guard case .settled = env2.snapshot(\OptionalSecrets.$pin.status) else {
+        let env2 = SharedEnvironment()
+        #expect(env2.snapshot(\KCDeleteSecrets.pin) == nil)
+        guard case .settled = env2.snapshot(\KCDeleteSecrets.$pin.status) else {
             Issue.record("expected settled")
             return
         }

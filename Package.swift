@@ -12,7 +12,10 @@ let package = Package(
         .library(name: "SMLocalPersistence", targets: ["SMLocalPersistence"]),
     ],
     dependencies: [
-        .package(path: "../StateManagement"),
+        .package(
+            url: "https://github.com/MaximBazarov/StateManagement.git",
+            from: "0.9.4"
+        ),
     ],
     targets: [
         .target(

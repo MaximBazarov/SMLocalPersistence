@@ -17,43 +17,70 @@ import Testing
 import StateManagement
 @testable import SMLocalPersistence
 
-@Suite(.serialized)
+private let preheatRoot = uniqueJSONRoot()
+private let noRowRoot = uniqueJSONRoot()
+private let blindWriteRoot = uniqueJSONRoot()
+
+extension JSONFilePolicy {
+    static let jfPreheat = JSONFilePolicy(root: preheatRoot)
+    static let jfNoRow = JSONFilePolicy(root: noRowRoot)
+    static let jfBlindWrite = JSONFilePolicy(root: blindWriteRoot)
+}
+
+final class JFPreheatNotes: StateContainer {
+    @AsyncState(.jfPreheat) var body: String = ""
+}
+
+final class JFNoRowNotes: StateContainer {
+    @AsyncState(.jfNoRow) var body: String = ""
+}
+
+final class JFBlindWriteNotes: StateContainer {
+    @AsyncState(.jfBlindWrite) var body: String = ""
+}
+
 @MainActor
 struct JSONFileStrategyTests {
 
     @Test("Preheat loads with no prior read")
     func preheatLoadsWithNoPriorRead() throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeJSONRoot(preheatRoot) }
+        let env = SharedEnvironment()
 
-        iso.environment.preheat(\DraftNotes.$body)
+        env.preheat(\JFPreheatNotes.$body)
 
-        #expect(iso.environment.snapshot(\DraftNotes.body) == "")
-        guard case .settled = iso.environment.snapshot(\DraftNotes.$body.status) else {
+        #expect(env.snapshot(\JFPreheatNotes.body) == "")
+        guard case .settled = env.snapshot(\JFPreheatNotes.$body.status) else {
             Issue.record("expected settled")
             return
         }
     }
 
-    @Test("A Sync write persists without a prior read")
-    func writeWithoutPriorReadPersists() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
-
-        iso.environment.perform(SetBody(value: "hello"))
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
-
-        #expect(iso.additionalEnvironment().snapshot(\DraftNotes.body) == "hello")
-    }
-
     @Test("Missing onRead does not create a JSON file")
     func missingOnReadDoesNotWrite() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeJSONRoot(noRowRoot) }
+        let env = SharedEnvironment()
 
-        #expect(iso.environment.snapshot(\DraftNotes.body) == "")
-        await #expect(throws: PersistOutTimeout.self) {
-            try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
+        #expect(env.snapshot(\JFNoRowNotes.body) == "")
+
+        let url = jsonFileURL(root: noRowRoot, location: jsonFileLocation(\JFNoRowNotes.$body))
+        await #expect(throws: TimedOut.self) {
+            try await waitFor(timeout: .milliseconds(200)) {
+                FileManager.default.fileExists(atPath: url.path)
+            }
         }
+    }
+
+    @Test("A Sync write persists without a prior read")
+    func writeWithoutPriorReadPersists() async throws {
+        defer { removeJSONRoot(blindWriteRoot) }
+        let env = SharedEnvironment()
+
+        env.perform(WriteValue(path: \JFBlindWriteNotes.body, value: "hello"))
+
+        let url = jsonFileURL(root: blindWriteRoot, location: jsonFileLocation(\JFBlindWriteNotes.$body))
+        try await waitFor { FileManager.default.fileExists(atPath: url.path) }
+
+        #expect(SharedEnvironment().snapshot(\JFBlindWriteNotes.body) == "hello")
     }
 }

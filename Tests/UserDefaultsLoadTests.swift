@@ -17,32 +17,45 @@ import Testing
 import StateManagement
 @testable import SMLocalPersistence
 
-final class ThemePrefs: StateContainer {
-    @AsyncState(.userDefaults) var theme: String = "system"
+// One test Container per test; Persistence identity is a unique suite through the
+// public Policy initializer (P16). Real store, no overlay.
+
+private let missingSuite = uniqueSuiteName()
+private let missingOptionalSuite = uniqueSuiteName()
+private let corruptSuite = uniqueSuiteName()
+private let persistSuite = uniqueSuiteName()
+private let deleteSuite = uniqueSuiteName()
+
+final class UDMissingPrefs: StateContainer {
+    @AsyncState(UserDefaultsPolicy(suiteName: missingSuite)) var theme: String = "system"
 }
 
-final class OptionalPrefs: StateContainer {
-    @AsyncState(.userDefaults) var nickname: String? = nil
+final class UDMissingOptionalPrefs: StateContainer {
+    @AsyncState(UserDefaultsPolicy(suiteName: missingOptionalSuite)) var nickname: String? = nil
 }
 
-struct SetNickname: SyncOperation {
-    let value: String?
-    func perform(in env: SyncOperationEnvironment) {
-        env.write(\OptionalPrefs.nickname, value: value)
-    }
+final class UDCorruptPrefs: StateContainer {
+    @AsyncState(UserDefaultsPolicy(suiteName: corruptSuite)) var theme: String = "system"
 }
 
-@Suite(.serialized)
+final class UDPersistPrefs: StateContainer {
+    @AsyncState(UserDefaultsPolicy(suiteName: persistSuite)) var theme: String = "system"
+}
+
+final class UDDeletePrefs: StateContainer {
+    @AsyncState(UserDefaultsPolicy(suiteName: deleteSuite)) var nickname: String? = nil
+}
+
 @MainActor
 struct UserDefaultsLoadTests {
 
     @Test("Missing UserDefaults key settles the Container default")
     func missingKeySettlesDefault() throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeUserDefaultsSuite(missingSuite) }
+        let env = SharedEnvironment()
 
-        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "system")
-        guard case .settled = iso.environment.snapshot(\ThemePrefs.$theme.status) else {
+        #expect(env.snapshot(\UDMissingPrefs.theme) == "system")
+        guard case .settled = env.snapshot(\UDMissingPrefs.$theme.status) else {
             Issue.record("expected settled")
             return
         }
@@ -50,11 +63,11 @@ struct UserDefaultsLoadTests {
 
     @Test("Missing optional key settles nil")
     func missingOptionalSettlesNil() throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeUserDefaultsSuite(missingOptionalSuite) }
+        let env = SharedEnvironment()
 
-        #expect(iso.environment.snapshot(\OptionalPrefs.nickname) == nil)
-        guard case .settled = iso.environment.snapshot(\OptionalPrefs.$nickname.status) else {
+        #expect(env.snapshot(\UDMissingOptionalPrefs.nickname) == nil)
+        guard case .settled = env.snapshot(\UDMissingOptionalPrefs.$nickname.status) else {
             Issue.record("expected settled")
             return
         }
@@ -62,14 +75,13 @@ struct UserDefaultsLoadTests {
 
     @Test("Corrupt UserDefaults data fails Source status and leaves the seed")
     func corruptDataFailsStatus() throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeUserDefaultsSuite(corruptSuite) }
+        let defaults = try #require(UserDefaults(suiteName: corruptSuite))
+        defaults.set(Data([0x00, 0x01, 0x02]), forKey: userDefaultsKey(\UDCorruptPrefs.$theme))
 
-        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
-        iso.plant(Data([0x00, 0x01, 0x02]), forKey: key)
-
-        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "system")
-        guard case .error = iso.environment.snapshot(\ThemePrefs.$theme.status) else {
+        let env = SharedEnvironment()
+        #expect(env.snapshot(\UDCorruptPrefs.theme) == "system")
+        guard case .error = env.snapshot(\UDCorruptPrefs.$theme.status) else {
             Issue.record("expected error")
             return
         }
@@ -77,18 +89,19 @@ struct UserDefaultsLoadTests {
 
     @Test("A Sync write persists; a second Environment loads the Value")
     func persistOutLoadsInSecondEnvironment() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeUserDefaultsSuite(persistSuite) }
+        let env = SharedEnvironment()
 
-        #expect(iso.environment.snapshot(\ThemePrefs.theme) == "system")
-        iso.environment.perform(SetTheme(value: "dark"))
+        #expect(env.snapshot(\UDPersistPrefs.theme) == "system")
+        env.perform(WriteValue(path: \UDPersistPrefs.theme, value: "dark"))
 
-        let key = "smud.\(String(describing: \ThemePrefs.$theme))"
-        try await iso.waitForPersistOut(key: key)
+        let defaults = try #require(UserDefaults(suiteName: persistSuite))
+        let key = userDefaultsKey(\UDPersistPrefs.$theme)
+        try await waitFor { defaults.data(forKey: key) != nil }
 
-        let env2 = iso.additionalEnvironment()
-        #expect(env2.snapshot(\ThemePrefs.theme) == "dark")
-        guard case .settled = env2.snapshot(\ThemePrefs.$theme.status) else {
+        let env2 = SharedEnvironment()
+        #expect(env2.snapshot(\UDPersistPrefs.theme) == "dark")
+        guard case .settled = env2.snapshot(\UDPersistPrefs.$theme.status) else {
             Issue.record("expected settled")
             return
         }
@@ -96,20 +109,21 @@ struct UserDefaultsLoadTests {
 
     @Test("Optional nil deletes the UserDefaults key")
     func optionalNilDeletesKey() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeUserDefaultsSuite(deleteSuite) }
+        let env = SharedEnvironment()
+        let defaults = try #require(UserDefaults(suiteName: deleteSuite))
+        let key = userDefaultsKey(\UDDeletePrefs.$nickname)
 
-        iso.environment.preheat(\OptionalPrefs.$nickname)
-        iso.environment.perform(SetNickname(value: "ada"))
-        let key = "smud.\(String(describing: \OptionalPrefs.$nickname))"
-        try await iso.waitForPersistOut(key: key)
+        env.preheat(\UDDeletePrefs.$nickname)
+        env.perform(WriteValue(path: \UDDeletePrefs.nickname, value: "ada" as String?))
+        try await waitFor { defaults.data(forKey: key) != nil }
 
-        iso.environment.perform(SetNickname(value: nil))
-        try await iso.waitForRemoval(key: key)
+        env.perform(WriteValue(path: \UDDeletePrefs.nickname, value: nil as String?))
+        try await waitFor { defaults.data(forKey: key) == nil }
 
-        let env2 = iso.additionalEnvironment()
-        #expect(env2.snapshot(\OptionalPrefs.nickname) == nil)
-        guard case .settled = env2.snapshot(\OptionalPrefs.$nickname.status) else {
+        let env2 = SharedEnvironment()
+        #expect(env2.snapshot(\UDDeletePrefs.nickname) == nil)
+        guard case .settled = env2.snapshot(\UDDeletePrefs.$nickname.status) else {
             Issue.record("expected settled")
             return
         }

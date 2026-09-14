@@ -24,8 +24,7 @@ public enum KeychainFailure: Error {
 
 /// Policy for ``KeychainStrategy``. The app declares a static. No shipped `.keychain`.
 ///
-/// IsolatedPersistence overlays Persistence identity (`service`) at `onRead` and forces
-/// `synchronizable = false` and `accessGroup = nil`. Accessibility stays on Policy.
+/// Persistence identity is the `service`, resolved at `onRead`.
 public struct KeychainPolicy: Sendable, Equatable {
     public let accessibility: String
     public let accessGroup: String?
@@ -46,6 +45,16 @@ public struct KeychainPolicy: Sendable, Equatable {
         self.accessGroup = accessGroup
         self.synchronizable = synchronizable
         self.service = service
+    }
+
+    /// The Keychain item identity every store call uses. Resolved from this Policy alone.
+    var identity: KeychainIdentity {
+        KeychainIdentity(
+            service: service,
+            accessibility: accessibility,
+            accessGroup: accessGroup,
+            synchronizable: synchronizable
+        )
     }
 }
 

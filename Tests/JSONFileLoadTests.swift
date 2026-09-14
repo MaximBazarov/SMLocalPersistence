@@ -17,48 +17,59 @@ import Testing
 import StateManagement
 @testable import SMLocalPersistence
 
-enum JSONFileTestRoot {
-    static let production = FileManager.default.temporaryDirectory
-        .appendingPathComponent("smlp-json-app-root", isDirectory: true)
-}
+// One test Container per test; Persistence identity is a unique root through the
+// public Policy initializer, declared as a static the way an app would (P2, P16).
+
+private let missingRoot = uniqueJSONRoot()
+private let missingOptionalRoot = uniqueJSONRoot()
+private let corruptRoot = uniqueJSONRoot()
+private let persistRoot = uniqueJSONRoot()
+private let deleteRoot = uniqueJSONRoot()
+private let compactRoot = uniqueJSONRoot()
 
 extension JSONFilePolicy {
-    static let drafts = JSONFilePolicy(root: JSONFileTestRoot.production)
+    static let jfMissing = JSONFilePolicy(root: missingRoot)
+    static let jfMissingOptional = JSONFilePolicy(root: missingOptionalRoot)
+    static let jfCorrupt = JSONFilePolicy(root: corruptRoot)
+    static let jfPersist = JSONFilePolicy(root: persistRoot)
+    static let jfDelete = JSONFilePolicy(root: deleteRoot)
+    static let jfCompact = JSONFilePolicy(root: compactRoot)
 }
 
-final class DraftNotes: StateContainer {
-    @AsyncState(.drafts) var body: String = ""
+final class JFMissingNotes: StateContainer {
+    @AsyncState(.jfMissing) var body: String = ""
 }
 
-final class OptionalNotes: StateContainer {
-    @AsyncState(.drafts) var subtitle: String? = nil
+final class JFMissingOptionalNotes: StateContainer {
+    @AsyncState(.jfMissingOptional) var subtitle: String? = nil
 }
 
-struct SetBody: SyncOperation {
-    let value: String
-    func perform(in env: SyncOperationEnvironment) {
-        env.write(\DraftNotes.body, value: value)
-    }
+final class JFCorruptNotes: StateContainer {
+    @AsyncState(.jfCorrupt) var body: String = ""
 }
 
-struct SetSubtitle: SyncOperation {
-    let value: String?
-    func perform(in env: SyncOperationEnvironment) {
-        env.write(\OptionalNotes.subtitle, value: value)
-    }
+final class JFPersistNotes: StateContainer {
+    @AsyncState(.jfPersist) var body: String = ""
 }
 
-@Suite(.serialized)
+final class JFDeleteNotes: StateContainer {
+    @AsyncState(.jfDelete) var subtitle: String? = nil
+}
+
+final class JFCompactNotes: StateContainer {
+    @AsyncState(.jfCompact) var body: String = ""
+}
+
 @MainActor
 struct JSONFileLoadTests {
 
     @Test("Missing JSON file settles the Container default")
     func missingFileSettlesDefault() throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeJSONRoot(missingRoot) }
+        let env = SharedEnvironment()
 
-        #expect(iso.environment.snapshot(\DraftNotes.body) == "")
-        guard case .settled = iso.environment.snapshot(\DraftNotes.$body.status) else {
+        #expect(env.snapshot(\JFMissingNotes.body) == "")
+        guard case .settled = env.snapshot(\JFMissingNotes.$body.status) else {
             Issue.record("expected settled")
             return
         }
@@ -66,11 +77,11 @@ struct JSONFileLoadTests {
 
     @Test("Missing optional file settles nil")
     func missingOptionalSettlesNil() throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeJSONRoot(missingOptionalRoot) }
+        let env = SharedEnvironment()
 
-        #expect(iso.environment.snapshot(\OptionalNotes.subtitle) == nil)
-        guard case .settled = iso.environment.snapshot(\OptionalNotes.$subtitle.status) else {
+        #expect(env.snapshot(\JFMissingOptionalNotes.subtitle) == nil)
+        guard case .settled = env.snapshot(\JFMissingOptionalNotes.$subtitle.status) else {
             Issue.record("expected settled")
             return
         }
@@ -78,14 +89,13 @@ struct JSONFileLoadTests {
 
     @Test("Corrupt JSON data fails Source status and leaves the seed")
     func corruptDataFailsStatus() throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeJSONRoot(corruptRoot) }
+        let location = jsonFileLocation(\JFCorruptNotes.$body)
+        try writeJSONFileData(root: corruptRoot, location: location, data: Data([0x00, 0x01, 0x02]))
 
-        let location = jsonFileLocation(\DraftNotes.$body)
-        try iso.plantJSON(Data([0x00, 0x01, 0x02]), location: location)
-
-        #expect(iso.environment.snapshot(\DraftNotes.body) == "")
-        guard case .error(let failure) = iso.environment.snapshot(\DraftNotes.$body.status) else {
+        let env = SharedEnvironment()
+        #expect(env.snapshot(\JFCorruptNotes.body) == "")
+        guard case .error(let failure) = env.snapshot(\JFCorruptNotes.$body.status) else {
             Issue.record("expected error")
             return
         }
@@ -97,17 +107,18 @@ struct JSONFileLoadTests {
 
     @Test("A Sync write persists; a second Environment loads the Value")
     func persistOutLoadsInSecondEnvironment() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeJSONRoot(persistRoot) }
+        let env = SharedEnvironment()
 
-        #expect(iso.environment.snapshot(\DraftNotes.body) == "")
-        iso.environment.perform(SetBody(value: "hello"))
+        #expect(env.snapshot(\JFPersistNotes.body) == "")
+        env.perform(WriteValue(path: \JFPersistNotes.body, value: "hello"))
 
-        try await iso.waitForJSONPersistOut(location: jsonFileLocation(\DraftNotes.$body))
+        let url = jsonFileURL(root: persistRoot, location: jsonFileLocation(\JFPersistNotes.$body))
+        try await waitFor { FileManager.default.fileExists(atPath: url.path) }
 
-        let env2 = iso.additionalEnvironment()
-        #expect(env2.snapshot(\DraftNotes.body) == "hello")
-        guard case .settled = env2.snapshot(\DraftNotes.$body.status) else {
+        let env2 = SharedEnvironment()
+        #expect(env2.snapshot(\JFPersistNotes.body) == "hello")
+        guard case .settled = env2.snapshot(\JFPersistNotes.$body.status) else {
             Issue.record("expected settled")
             return
         }
@@ -115,20 +126,20 @@ struct JSONFileLoadTests {
 
     @Test("Optional nil deletes the JSON file")
     func optionalNilDeletesFile() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeJSONRoot(deleteRoot) }
+        let env = SharedEnvironment()
+        let url = jsonFileURL(root: deleteRoot, location: jsonFileLocation(\JFDeleteNotes.$subtitle))
 
-        iso.environment.preheat(\OptionalNotes.$subtitle)
-        iso.environment.perform(SetSubtitle(value: "draft"))
-        let location = jsonFileLocation(\OptionalNotes.$subtitle)
-        try await iso.waitForJSONPersistOut(location: location)
+        env.preheat(\JFDeleteNotes.$subtitle)
+        env.perform(WriteValue(path: \JFDeleteNotes.subtitle, value: "draft" as String?))
+        try await waitFor { FileManager.default.fileExists(atPath: url.path) }
 
-        iso.environment.perform(SetSubtitle(value: nil))
-        try await iso.waitForJSONRemoval(location: location)
+        env.perform(WriteValue(path: \JFDeleteNotes.subtitle, value: nil as String?))
+        try await waitFor { !FileManager.default.fileExists(atPath: url.path) }
 
-        let env2 = iso.additionalEnvironment()
-        #expect(env2.snapshot(\OptionalNotes.subtitle) == nil)
-        guard case .settled = env2.snapshot(\OptionalNotes.$subtitle.status) else {
+        let env2 = SharedEnvironment()
+        #expect(env2.snapshot(\JFDeleteNotes.subtitle) == nil)
+        guard case .settled = env2.snapshot(\JFDeleteNotes.$subtitle.status) else {
             Issue.record("expected settled")
             return
         }
@@ -136,14 +147,14 @@ struct JSONFileLoadTests {
 
     @Test("Persisted JSON is Foundation encoder defaults, not pretty printed")
     func persistedJSONIsCompact() async throws {
-        let iso = IsolatedPersistence()
-        defer { iso.clear() }
+        defer { removeJSONRoot(compactRoot) }
+        let env = SharedEnvironment()
 
-        iso.environment.perform(SetBody(value: "hello"))
-        let location = jsonFileLocation(\DraftNotes.$body)
-        try await iso.waitForJSONPersistOut(location: location)
+        env.perform(WriteValue(path: \JFCompactNotes.body, value: "hello"))
+        let url = jsonFileURL(root: compactRoot, location: jsonFileLocation(\JFCompactNotes.$body))
+        try await waitFor { FileManager.default.fileExists(atPath: url.path) }
 
-        let data = try #require(iso.jsonFileData(location: location))
+        let data = try Data(contentsOf: url)
         #expect(data == Data("\"hello\"".utf8))
         #expect(!data.contains(UInt8(ascii: "\n")))
     }

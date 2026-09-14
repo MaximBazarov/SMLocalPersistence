@@ -13,7 +13,6 @@
 //===----------------------------------------------------------------------===//
 
 import Foundation
-import OSLog
 import Security
 
 struct KeychainIdentity: Sendable, Equatable {
@@ -22,8 +21,6 @@ struct KeychainIdentity: Sendable, Equatable {
     let accessGroup: String?
     let synchronizable: Bool
 }
-
-private let keychainLog = Logger(subsystem: "SMLocalPersistence", category: "Keychain")
 
 func copyKeychainData(identity: KeychainIdentity, account: String) throws(KeychainFailure) -> Data? {
     var query = baseKeychainQuery(identity: identity, account: account)
@@ -72,18 +69,6 @@ func deleteKeychainItem(identity: KeychainIdentity, account: String) throws(Keyc
         return
     }
     throw KeychainFailure.osStatus(status)
-}
-
-func deleteKeychainItems(service: String) {
-    let query: [String: Any] = [
-        kSecClass as String: kSecClassGenericPassword,
-        kSecAttrService as String: service,
-        kSecAttrSynchronizable as String: kSecAttrSynchronizableAny,
-    ]
-    let status = SecItemDelete(query as CFDictionary)
-    if status != errSecSuccess && status != errSecItemNotFound {
-        keychainLog.error("IsolatedPersistence Keychain clear failed: \(status)")
-    }
 }
 
 func baseKeychainQuery(identity: KeychainIdentity, account: String) -> [String: Any] {

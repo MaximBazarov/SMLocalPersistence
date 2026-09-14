@@ -35,7 +35,7 @@ public final class UserDefaultsStrategy: AsyncStrategy {
         policy: Policy,
         current: Value
     ) {
-        let defaults = PersistenceOverlay.userDefaults(policy: policy, environmentID: env.environmentID)
+        let defaults = policy.makeUserDefaults()
         let key = userDefaultsKey(address)
         if let data = defaults.data(forKey: key) {
             applyEncoded(data, address: address)
@@ -50,7 +50,7 @@ public final class UserDefaultsStrategy: AsyncStrategy {
         policy: Policy,
         current: Value?
     ) {
-        let defaults = PersistenceOverlay.userDefaults(policy: policy, environmentID: env.environmentID)
+        let defaults = policy.makeUserDefaults()
         let udKey = userDefaultsKey(address, key: key)
         if let data = defaults.data(forKey: udKey) {
             applyEncoded(data, address: address, key: key)
@@ -77,7 +77,7 @@ public final class UserDefaultsStrategy: AsyncStrategy {
     }
 
     private func persist<Value>(_ value: Value, key: String, policy: Policy) {
-        let defaults = PersistenceOverlay.userDefaults(policy: policy, environmentID: env.environmentID)
+        let defaults = policy.makeUserDefaults()
         do {
             try env.perform(PersistUserDefaults(defaults: defaults, key: key, value: value))
         } catch {

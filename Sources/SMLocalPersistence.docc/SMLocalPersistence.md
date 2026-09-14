@@ -4,7 +4,7 @@ Local-persistence Satellite for StateManagement: UserDefaults, Keychain, and JSO
 
 Back a Value with `@AsyncState(.userDefaults)` or an app Policy static (``KeychainPolicy``, ``JSONFilePolicy``). Strategy kicks take the `$` Address. Policy selects the store, not a second Address.
 
-Tests and previews use ``IsolatedPersistence``. It overlays Persistence identity before first `onRead`. Production Containers stay unchanged. `SharedEnvironment()` stays production.
+App tests and previews isolate through StateManagement's TestingSupport (I9): silence the strategy, no store is touched. Production Persistence identity is the Policy static, resolved at `onRead`. `SharedEnvironment()` stays production.
 
 ## Topics
 
@@ -28,14 +28,3 @@ Tests and previews use ``IsolatedPersistence``. It overlays Persistence identity
 
 - ``JSONFileStrategy``
 - ``JSONFileFailure``
-
-### Tests and previews
-
-``IsolatedPersistence`` overlays Persistence identity for tests and previews. DEBUG `.sharedEnvironment(.isolatedPersistence)` and `.seedEnvironment(.isolatedPersistence) { }` construct and retain IsolatedPersistence per View identity. Production `SharedEnvironment()` is unchanged.
-
-- ``IsolatedPersistence``
-- ``IsolatedPersistenceToken``
-- ``IsolatedPersistence/environment``
-- ``IsolatedPersistence/additionalEnvironment()``
-- ``IsolatedPersistence/clear()``
-- ``IsolatedPersistence/seed(_:)``

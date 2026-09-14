@@ -18,7 +18,7 @@ import StateManagement
 /// Policy for ``UserDefaultsStrategy``. Call site `@AsyncState(.userDefaults)`.
 ///
 /// Shipped ``userDefaults`` is `.standard`. A named suite is ``init(suiteName:)``. Empty name is
-/// `preconditionFailure`. IsolatedPersistence overlays Persistence identity at `onRead`.
+/// `preconditionFailure`. Persistence identity is this Policy, resolved at `onRead`.
 public struct UserDefaultsPolicy: Sendable, Equatable {
     enum Identity: Sendable, Equatable {
         case standard

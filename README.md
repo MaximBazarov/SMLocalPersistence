@@ -1,6 +1,6 @@
 # SMLocalPersistence
 
-Experimental. Satellite v0.9.0. Depends on StateManagement 0.9.2. The public API will break until 1.0.0. In-repo DocC only, no Swift Package Index until 1.0.0. Not a freeze.
+Experimental. Satellite v0.9.0. Depends on StateManagement 0.9.4. The public API will break until 1.0.0. In-repo DocC only, no Swift Package Index until 1.0.0. Not a freeze.
 
 Local persistence for [StateManagement](https://github.com). A Satellite: it owns the store. Core owns the AsyncStrategy seam.
 
@@ -22,10 +22,10 @@ final class Notes: StateContainer {
 
 Values are `Codable`. UserDefaults keys and Keychain accounts are the Address. JSON-file is one file per Address, folders per Container type. Load on first read or `preheat`. A Sync write persists through `onWrite`.
 
-Tests and previews construct `IsolatedPersistence` and `defer { iso.clear() }`. DEBUG `.sharedEnvironment(.isolatedPersistence)` and `.seedEnvironment(.isolatedPersistence) { }` retain IsolatedPersistence per View identity. Production Containers stay `@AsyncState(.userDefaults)` or an app Policy static. `SharedEnvironment()` stays production.
+App tests and previews isolate through StateManagement's TestingSupport (I9): silence the strategy, no store is touched. Production Containers stay `@AsyncState(.userDefaults)` or an app Policy static. `SharedEnvironment()` stays production.
 
 ## Requirements
 
 - Swift 6.2+
 - macOS 12+, iOS 17+
-- StateManagement 0.9.2 (harness uses a path dependency)
+- StateManagement 0.9.4

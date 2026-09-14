@@ -35,7 +35,7 @@ public final class JSONFileStrategy: AsyncStrategy {
         policy: Policy,
         current: Value
     ) {
-        let root = PersistenceOverlay.jsonRoot(policy: policy, environmentID: env.environmentID)
+        let root = policy.root
         let location = jsonFileLocation(address)
         do {
             if let data = try copyJSONFileData(root: root, location: location) {
@@ -54,7 +54,7 @@ public final class JSONFileStrategy: AsyncStrategy {
         policy: Policy,
         current: Value?
     ) {
-        let root = PersistenceOverlay.jsonRoot(policy: policy, environmentID: env.environmentID)
+        let root = policy.root
         let location = jsonFileLocation(address, key: key)
         do {
             if let data = try copyJSONFileData(root: root, location: location) {
@@ -85,7 +85,7 @@ public final class JSONFileStrategy: AsyncStrategy {
     }
 
     private func persist<Value>(_ value: Value, location: JSONFileLocation, policy: Policy) {
-        let root = PersistenceOverlay.jsonRoot(policy: policy, environmentID: env.environmentID)
+        let root = policy.root
         do {
             try env.perform(PersistJSONFile(root: root, location: location, value: value))
         } catch {
