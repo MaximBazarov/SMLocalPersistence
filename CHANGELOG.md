@@ -22,9 +22,9 @@ Experimental Satellite `0.9.0`. Depends on StateManagement `0.9.4`. In-repo DocC
 
 - JSON-file strategy. App `JSONFilePolicy` static (`root` required). One Address is one file; folders are `String(reflecting:)` of the Container type; filenames encode the Address. `@AsyncState(JSONFileStrategy.self)` does not compile. `JSONFileFailure` is `decoding` or `io`. Persist-out is atomic; optional `nil` `onWrite` deletes the file.
 
-- Keychain Source. App `KeychainPolicy` static (`accessibility`, `accessGroup`, `synchronizable`, `service`). `@AsyncState(KeychainSource.self)` does not compile.
+- Keychain strategy. App `KeychainPolicy` static (`accessibility`, `accessGroup`, `synchronizable`, `service`). `@AsyncState(KeychainSource.self)` does not compile.
 
-- UserDefaults KVS Satellite on the StateManagement `Source` seam. Source with `@AsyncState(.userDefaults)`.
+- UserDefaults KVS Satellite on the StateManagement AsyncStrategy seam. Call site `@AsyncState(.userDefaults)`.
 
 ### Changed
 

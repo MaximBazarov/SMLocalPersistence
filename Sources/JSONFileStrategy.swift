@@ -89,7 +89,7 @@ public final class JSONFileStrategy: AsyncStrategy {
         do {
             try env.perform(PersistJSONFile(root: root, location: location, value: value))
         } catch {
-            // Persist-out does not fail Source status.
+            // Persist-out does not fail async state status.
             jsonFileStrategyLog.error("Persist-out failed: \(error.localizedDescription)")
         }
     }
