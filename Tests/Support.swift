@@ -140,3 +140,22 @@ func waitFor(
 func keychainData(identity: KeychainIdentity, account: String) -> Data? {
     (try? copyKeychainData(identity: identity, account: account)) ?? nil
 }
+
+/// Whether this runner can reach a real Keychain. The SPM `xctest` runner on the iOS
+/// Simulator has no keychain entitlement, so every `SecItem` call fails with
+/// `errSecMissingEntitlement`; the Keychain suites skip there rather than test the
+/// entitlement instead of the strategy. macOS CI runs them against the real store.
+let keychainStoreAvailable: Bool = {
+    let service = uniqueKeychainService()
+    defer { removeKeychainItems(service: service) }
+    do {
+        try upsertKeychainData(
+            identity: KeychainPolicy.testService(service).identity,
+            account: "smlp.probe",
+            data: Data([0x01])
+        )
+        return true
+    } catch {
+        return false
+    }
+}()

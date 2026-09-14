@@ -55,6 +55,7 @@ final class KCDeleteSecrets: StateContainer {
     @AsyncState(.kcDelete) var pin: String? = nil
 }
 
+@Suite(.enabled(if: keychainStoreAvailable, "this runner has no keychain entitlement"))
 @MainActor
 struct KeychainLoadTests {
 

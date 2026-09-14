@@ -40,6 +40,7 @@ final class KCBlindWriteSecrets: StateContainer {
     @AsyncState(.kcBlindWrite) var token: String = ""
 }
 
+@Suite(.enabled(if: keychainStoreAvailable, "this runner has no keychain entitlement"))
 @MainActor
 struct KeychainStrategyTests {
 

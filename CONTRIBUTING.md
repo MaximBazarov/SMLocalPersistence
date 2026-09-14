@@ -18,7 +18,7 @@ You need Swift 6.2 or later, and Xcode (not Command Line Tools alone). This pack
 
 - Build: `swift build`
 - Test (macOS / host): `swift test`
-- Test (iOS Simulator): `xcodebuild test -scheme SMLocalPersistence-Package -destination 'platform=iOS Simulator,name=iPhone 17'`
+- Test (iOS Simulator): `xcodebuild test -scheme SMLocalPersistence -destination 'platform=iOS Simulator,name=iPhone 17'`
 
 CI runs the suite on a macOS **and** an iOS Simulator on every pull request (matrix in `.github/workflows/ci.yml`), so run both locally before opening one.
 

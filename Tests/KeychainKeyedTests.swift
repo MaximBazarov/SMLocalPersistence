@@ -34,6 +34,7 @@ final class KCKeyedPersistBag: StateContainer {
     @AsyncState(.kcKeyedPersist) var tokens: [String: String] = [:]
 }
 
+@Suite(.enabled(if: keychainStoreAvailable, "this runner has no keychain entitlement"))
 @MainActor
 struct KeychainKeyedTests {
 
