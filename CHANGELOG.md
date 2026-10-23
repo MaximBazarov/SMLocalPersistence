@@ -18,6 +18,10 @@ Experimental Satellite `0.9.0`. Depends on StateManagement `0.9.4`. In-repo DocC
 
 ### Added
 
+- `StableUserDefaultsContainer` lets Containers name persisted addresses explicitly, preserving UserDefaults keys across optimized launches. Atomic and keyed values use the same names for reads, writes, and deletion. Existing Containers retain their current key format.
+- The package bundles its UserDefaults privacy manifest.
+
+
 - In-repo DocC catalog: Policy, UserDefaults, Keychain, JSON file. Persist internals hidden. No SPI.
 
 - JSON-file strategy. App `JSONFilePolicy` static (`root` required). One Address is one file; folders are `String(reflecting:)` of the Container type; filenames encode the Address. `@AsyncState(JSONFileStrategy.self)` does not compile. `JSONFileFailure` is `decoding` or `io`. Persist-out is atomic; optional `nil` `onWrite` deletes the file.

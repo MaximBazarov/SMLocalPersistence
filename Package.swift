@@ -21,7 +21,8 @@ let package = Package(
         .target(
             name: "SMLocalPersistence",
             dependencies: ["StateManagement"],
-            path: "Sources"
+            path: "Sources",
+            resources: [.copy("PrivacyInfo.xcprivacy")]
         ),
         .testTarget(
             name: "SMLocalPersistenceTests",
