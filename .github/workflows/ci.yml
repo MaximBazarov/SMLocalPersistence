@@ -16,6 +16,8 @@ jobs:
         include:
           - platform: macOS
             command: swift test --filter SMLocalPersistenceTests
+          - platform: macOS Release
+            command: swift test -c release --filter StableUserDefaultsTests
           - platform: iOS
             command: >-
               xcodebuild test

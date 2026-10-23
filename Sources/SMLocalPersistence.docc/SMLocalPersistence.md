@@ -18,6 +18,7 @@ App tests and previews isolate stores with a unique Persistence identity per Con
 
 - ``UserDefaultsStrategy``
 - ``UserDefaultsPolicy/userDefaults``
+- ``StableUserDefaultsContainer``
 
 ### Keychain
 
@@ -28,3 +29,8 @@ App tests and previews isolate stores with a unique Persistence identity per Con
 
 - ``JSONFileStrategy``
 - ``JSONFileFailure``
+
+## Durable UserDefaults addresses
+
+See [Durable UserDefaults addresses](https://github.com/MaximBazarov/SMLocalPersistence/blob/main/README.md#durable-userdefaults-addresses)
+for usage and compatibility guidance.
