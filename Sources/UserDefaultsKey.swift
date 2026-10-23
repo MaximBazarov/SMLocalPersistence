@@ -15,14 +15,14 @@
 import Foundation
 import StateManagement
 
-/// Containers with durable data name every persisted address explicitly. Swift's
+/// Containers with durable UserDefaults data name each UserDefaults address explicitly. Swift's
 /// optimized key-path descriptions can contain process-specific getter addresses.
 /// Nonconforming containers continue to use those descriptions as their addresses.
 public protocol StableUserDefaultsContainer: StateContainer {
     /// Maps both `_property` and `$property` key paths to the same permanent address.
-    /// Use a distinct symbolic address for each persisted property, without the
-    /// `smud.` prefix or keyed suffix; UserDefaults adds those when forming the key.
-    /// A missing entry for a persisted key path is a precondition failure.
+    /// Use a distinct symbolic address for each UserDefaults property, without the
+    /// `smud.` prefix or keyed suffix; the strategy adds those when forming the key.
+    /// A missing entry for a UserDefaults key path is a precondition failure.
     static var userDefaultsAddresses: [AnyKeyPath: String] { get }
 }
 
@@ -44,7 +44,6 @@ func userDefaultsKey<Storage: StateContainer, Value, Key: Hashable>(
     return "smud.\(stableUserDefaultsAddress(address))#\(lossless.description)"
 }
 
-/// Value-first kicks receive `_property`; `$`-first kicks receive `$property`. Persist keys are the `$` Address.
 @MainActor
 private func stableUserDefaultsAddress<Storage, Value>(_ address: KeyPath<Storage, Value>) -> String {
     if let container = Storage.self as? any StableUserDefaultsContainer.Type {
@@ -56,6 +55,8 @@ private func stableUserDefaultsAddress<Storage, Value>(_ address: KeyPath<Storag
     return String(describing: address).replacingOccurrences(of: "._", with: ".$")
 }
 
+/// Value-first kicks receive `_property`; `$`-first kicks receive `$property`.
+/// Legacy addresses normalize both to the `$` Address.
 func dollarAddressDescription<Storage, Value>(_ address: KeyPath<Storage, Value>) -> String {
     String(describing: address).replacingOccurrences(of: "._", with: ".$")
 }

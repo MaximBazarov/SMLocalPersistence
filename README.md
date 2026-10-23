@@ -20,7 +20,7 @@ final class Notes: StateContainer {
 }
 ```
 
-Values are `Codable`. UserDefaults keys and Keychain accounts are the Address. JSON-file is one file per Address, folders per Container type. Load on first read or `preheat`. A Sync write persists through `onWrite`.
+Values are `Codable`. For UserDefaults keys, see [Durable UserDefaults addresses](#durable-userdefaults-addresses). Keychain accounts use the Address. JSON-file is one file per Address, folders per Container type. Load on first read or `preheat`. A Sync write persists through `onWrite`.
 
 App tests and previews isolate stores with a unique Persistence identity per Container through the public Policy initializers. Production Containers stay `@AsyncState(.userDefaults)` or an app Policy static. `SharedEnvironment()` stays production.
 
@@ -40,8 +40,9 @@ final class DurablePrefs: StableUserDefaultsContainer {
 }
 ```
 
-The stored key is `smud.prefs.theme`. Keyed values append `#{key}`. Names must
-be unique within the UserDefaults suite and remain unchanged across releases.
+The stored key is `smud.prefs.theme`. Keyed values append `#{key}`. Reads, writes,
+and optional-value deletion use the same key. Names must be unique within the
+UserDefaults suite and remain unchanged across releases.
 A missing mapping in a conforming Container is a precondition failure.
 
 Containers without this conformance retain their existing key format. Swift can

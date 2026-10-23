@@ -18,6 +18,7 @@ App tests and previews isolate stores with a unique Persistence identity per Con
 
 - ``UserDefaultsStrategy``
 - ``UserDefaultsPolicy/userDefaults``
+- ``StableUserDefaultsContainer``
 
 ### Keychain
 
@@ -31,9 +32,5 @@ App tests and previews isolate stores with a unique Persistence identity per Con
 
 ## Durable UserDefaults addresses
 
-Conform a Container to ``StableUserDefaultsContainer`` to give each persisted
-property a permanent name. Map both its backing and projected key paths to the
-same name. Names must be unique within the suite and stable across releases.
-Containers without conformance retain key-path description keys, which can
-include process-specific getter addresses in optimized builds. No automatic
-migration is performed. Keychain and JSON-file identities are unchanged.
+See [Durable UserDefaults addresses](https://github.com/MaximBazarov/SMLocalPersistence/blob/main/README.md#durable-userdefaults-addresses)
+for usage and compatibility guidance.
